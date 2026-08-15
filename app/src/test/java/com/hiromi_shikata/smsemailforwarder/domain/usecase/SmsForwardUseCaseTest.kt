@@ -17,10 +17,12 @@ class SmsForwardUseCaseTest {
 
     private val completeConfig = ForwardingConfig(
         destinationEmail = "dest@example.com",
+        authMode = com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode.SMTP,
         smtpHost = "smtp.gmail.com",
         smtpPort = 587,
         smtpUsername = "sender@gmail.com",
         smtpPassword = "app-password",
+        googleAccountName = "",
     )
 
     private val smsMessage = SmsMessage(

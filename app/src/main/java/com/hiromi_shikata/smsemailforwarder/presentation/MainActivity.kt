@@ -10,12 +10,14 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModelProvider
 import com.hiromi_shikata.smsemailforwarder.BuildConfig
 import com.hiromi_shikata.smsemailforwarder.R
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingConfigRepository
 import com.hiromi_shikata.smsemailforwarder.data.remote.GithubAppUpdateRepository
 import com.hiromi_shikata.smsemailforwarder.databinding.ActivityMainBinding
+import com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.AppUpdateCheckUseCase
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.ForwardingConfigGetUseCase
 
@@ -30,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        WindowCompat.setDecorFitsSystemWindows(window, true)
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -55,10 +58,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewModel.config.observe(this) { config ->
-            binding.statusText.text = if (config.isComplete) {
-                getString(R.string.forwarding_active, config.destinationEmail)
-            } else {
-                getString(R.string.setup_required)
+            binding.statusText.text = when {
+                !config.isComplete -> getString(R.string.setup_required)
+                config.authMode == EmailAuthMode.GOOGLE_ACCOUNT -> getString(
+                    R.string.forwarding_active_google,
+                    config.googleAccountName,
+                    config.destinationEmail,
+                )
+                else -> getString(R.string.forwarding_active, config.destinationEmail)
             }
         }
 
