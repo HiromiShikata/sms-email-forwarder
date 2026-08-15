@@ -1,0 +1,56 @@
+buildscript {
+    ext.kotlin_version = '2.0.21'
+    repositories {
+        mavenCentral()
+        google()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:8.13.2"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+ext.jacocoToolVersion = "0.8.12"
+
+apply plugin: "jacoco"
+
+jacoco {
+    toolVersion = rootProject.ext.jacocoToolVersion
+}
+
+tasks.register("jacocoTestReport", JacocoReport) {
+    group = "verification"
+    description = "Aggregates JaCoCo unit-test coverage into a single HTML + XML report."
+
+    def excludes = [
+        "**/R.class",
+        "**/R\$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*"
+    ]
+
+    dependsOn ":app:testDebugUnitTest"
+
+    def appProject = project(":app")
+    sourceDirectories.setFrom(files("${appProject.projectDir}/src/main/java"))
+    classDirectories.setFrom(files(
+        fileTree(dir: "${appProject.buildDir}/tmp/kotlin-classes/debug", excludes: excludes),
+        fileTree(dir: "${appProject.buildDir}/intermediates/javac/debug/classes", excludes: excludes)
+    ))
+    executionData.setFrom(files(
+        fileTree(dir: appProject.buildDir, includes: [
+            "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec",
+            "jacoco/testDebugUnitTest.exec"
+        ])
+    ))
+
+    reports {
+        html.required = true
+        xml.required = true
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir("reports/jacoco/jacocoTestReport/html")
+        xml.outputLocation = layout.buildDirectory.file("reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
+    }
+}
