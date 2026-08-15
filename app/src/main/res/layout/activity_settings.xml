@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -25,58 +26,124 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/smtp_host"
+            android:layout_marginTop="24dp"
+            android:text="@string/auth_mode_label"
             android:textStyle="bold" />
 
-        <EditText
-            android:id="@+id/smtpHostInput"
+        <RadioGroup
+            android:id="@+id/authModeGroup"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textUri"
-            android:hint="@string/smtp_host_hint" />
+            android:layout_marginTop="8dp"
+            android:orientation="vertical">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/smtp_port"
-            android:textStyle="bold" />
+            <RadioButton
+                android:id="@+id/authModeSmtp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/auth_mode_smtp" />
 
-        <EditText
-            android:id="@+id/smtpPortInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="number"
-            android:hint="@string/smtp_port_hint" />
+            <RadioButton
+                android:id="@+id/authModeGoogleAccount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/auth_mode_google_account" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/smtp_username"
-            android:textStyle="bold" />
+        </RadioGroup>
 
-        <EditText
-            android:id="@+id/smtpUsernameInput"
+        <LinearLayout
+            android:id="@+id/smtpSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textEmailAddress"
-            android:hint="@string/smtp_username_hint" />
+            android:orientation="vertical">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/smtp_password"
-            android:textStyle="bold" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/smtp_host"
+                android:textStyle="bold" />
 
-        <EditText
-            android:id="@+id/smtpPasswordInput"
+            <EditText
+                android:id="@+id/smtpHostInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textUri"
+                android:hint="@string/smtp_host_hint" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/smtp_port"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/smtpPortInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:hint="@string/smtp_port_hint" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/smtp_username"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/smtpUsernameInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textEmailAddress"
+                android:hint="@string/smtp_username_hint" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/smtp_password"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/smtpPasswordInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:hint="@string/smtp_password_hint" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/googleAccountSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textPassword"
-            android:hint="@string/smtp_password_hint" />
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/google_account_label"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/chooseAccountButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/choose_google_account" />
+
+            <TextView
+                android:id="@+id/selectedAccountText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/no_account_selected" />
+
+        </LinearLayout>
 
         <Button
             android:id="@+id/saveButton"

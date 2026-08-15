@@ -15,10 +15,12 @@ class ForwardingConfigGetUseCaseTest {
     fun `execute returns config from repository`() {
         val expected = ForwardingConfig(
             destinationEmail = "test@example.com",
+            authMode = com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode.SMTP,
             smtpHost = "smtp.gmail.com",
             smtpPort = 587,
             smtpUsername = "user@gmail.com",
             smtpPassword = "password",
+            googleAccountName = "",
         )
         whenever(repository.get()).thenReturn(expected)
 

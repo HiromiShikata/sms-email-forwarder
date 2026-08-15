@@ -1,6 +1,7 @@
 package com.hiromi_shikata.smsemailforwarder.presentation
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingConfig
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.ForwardingConfigGetUseCase
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.ForwardingConfigUpdateUseCase
@@ -21,26 +22,31 @@ class SettingsViewModelTest {
     private val configUpdateUseCase: ForwardingConfigUpdateUseCase = mock()
     private val viewModel = SettingsViewModel(configGetUseCase, configUpdateUseCase)
 
-    private val storedConfig = ForwardingConfig(
+    private val storedSmtpConfig = ForwardingConfig(
         destinationEmail = "dest@example.com",
+        authMode = EmailAuthMode.SMTP,
         smtpHost = "smtp.gmail.com",
         smtpPort = 587,
         smtpUsername = "user@gmail.com",
         smtpPassword = "password",
+        googleAccountName = "",
     )
 
     @Test
     fun `loadConfig sets config live data from use case`() {
-        whenever(configGetUseCase.execute()).thenReturn(storedConfig)
+        whenever(configGetUseCase.execute()).thenReturn(storedSmtpConfig)
 
         viewModel.loadConfig()
 
-        assertEquals(storedConfig, viewModel.config.value)
+        assertEquals(storedSmtpConfig, viewModel.config.value)
     }
 
     @Test
-    fun `saveConfig delegates to use case with correct ForwardingConfig`() {
-        viewModel.saveConfig(
+    fun `saveSmtpConfig delegates to use case with smtp auth mode`() {
+        whenever(configGetUseCase.execute()).thenReturn(storedSmtpConfig)
+        viewModel.loadConfig()
+
+        viewModel.saveSmtpConfig(
             destinationEmail = "dest@example.com",
             smtpHost = "smtp.gmail.com",
             smtpPort = "587",
@@ -48,12 +54,17 @@ class SettingsViewModelTest {
             smtpPassword = "password",
         )
 
-        verify(configUpdateUseCase).execute(any())
+        verify(configUpdateUseCase).execute(
+            org.mockito.kotlin.argThat { authMode == EmailAuthMode.SMTP },
+        )
     }
 
     @Test
-    fun `saveConfig sets saved to true after saving`() {
-        viewModel.saveConfig(
+    fun `saveSmtpConfig sets saved to true after saving`() {
+        whenever(configGetUseCase.execute()).thenReturn(storedSmtpConfig)
+        viewModel.loadConfig()
+
+        viewModel.saveSmtpConfig(
             destinationEmail = "dest@example.com",
             smtpHost = "smtp.gmail.com",
             smtpPort = "587",
@@ -65,8 +76,11 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `saveConfig defaults to port 587 when port is not a number`() {
-        viewModel.saveConfig(
+    fun `saveSmtpConfig defaults to port 587 when port is not a number`() {
+        whenever(configGetUseCase.execute()).thenReturn(storedSmtpConfig)
+        viewModel.loadConfig()
+
+        viewModel.saveSmtpConfig(
             destinationEmail = "dest@example.com",
             smtpHost = "smtp.gmail.com",
             smtpPort = "invalid",
@@ -77,5 +91,35 @@ class SettingsViewModelTest {
         verify(configUpdateUseCase).execute(
             org.mockito.kotlin.argThat { smtpPort == 587 },
         )
+    }
+
+    @Test
+    fun `saveGoogleAccountConfig delegates to use case with google account auth mode`() {
+        whenever(configGetUseCase.execute()).thenReturn(storedSmtpConfig)
+        viewModel.loadConfig()
+
+        viewModel.saveGoogleAccountConfig(
+            destinationEmail = "dest@example.com",
+            googleAccountName = "user@gmail.com",
+        )
+
+        verify(configUpdateUseCase).execute(
+            org.mockito.kotlin.argThat {
+                authMode == EmailAuthMode.GOOGLE_ACCOUNT && googleAccountName == "user@gmail.com"
+            },
+        )
+    }
+
+    @Test
+    fun `saveGoogleAccountConfig sets saved to true after saving`() {
+        whenever(configGetUseCase.execute()).thenReturn(storedSmtpConfig)
+        viewModel.loadConfig()
+
+        viewModel.saveGoogleAccountConfig(
+            destinationEmail = "dest@example.com",
+            googleAccountName = "user@gmail.com",
+        )
+
+        assertTrue(viewModel.saved.value == true)
     }
 }

@@ -14,10 +14,12 @@ class ForwardingConfigUpdateUseCaseTest {
     fun `execute saves config to repository`() {
         val config = ForwardingConfig(
             destinationEmail = "dest@example.com",
+            authMode = com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode.SMTP,
             smtpHost = "smtp.gmail.com",
             smtpPort = 587,
             smtpUsername = "user@gmail.com",
             smtpPassword = "password",
+            googleAccountName = "",
         )
 
         useCase.execute(config)
