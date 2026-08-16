@@ -14,7 +14,14 @@ class AccountManagerOAuthTokenProvider(context: Context) : OAuthTokenProvider {
             ?: throw IllegalStateException("Google account not found on device: $accountName")
         val bundle = accountManager.getAuthToken(account, GMAIL_SCOPE, null, false, null, null).result
         return bundle.getString(AccountManager.KEY_AUTHTOKEN)
-            ?: throw IllegalStateException("Failed to obtain OAuth token for $accountName")
+            ?: throw IllegalStateException(
+                "Google auth token unavailable for $accountName. " +
+                    "Open SMS Email Forwarder and re-select your Google Account in Settings.",
+            )
+    }
+
+    override fun invalidateToken(accountName: String, token: String) {
+        accountManager.invalidateAuthToken(GOOGLE_ACCOUNT_TYPE, token)
     }
 
     companion object {

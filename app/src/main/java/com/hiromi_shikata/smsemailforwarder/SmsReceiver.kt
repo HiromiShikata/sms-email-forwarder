@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
+import com.hiromi_shikata.smsemailforwarder.data.local.AndroidSmsForwardingErrorNotifier
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingConfigRepository
 import com.hiromi_shikata.smsemailforwarder.data.remote.AccountManagerOAuthTokenProvider
 import com.hiromi_shikata.smsemailforwarder.data.remote.GmailApiEmailSendRepository
@@ -11,8 +12,21 @@ import com.hiromi_shikata.smsemailforwarder.data.remote.SmtpEmailSendRepository
 import com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode
 import com.hiromi_shikata.smsemailforwarder.domain.entity.SmsMessage
 import com.hiromi_shikata.smsemailforwarder.domain.repository.EmailSendRepository
+import com.hiromi_shikata.smsemailforwarder.domain.repository.SmsForwardingErrorNotifier
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.SmsForwardUseCase
 import kotlin.concurrent.thread
+
+internal fun forwardWithNotification(
+    useCase: SmsForwardUseCase,
+    message: SmsMessage,
+    notifier: SmsForwardingErrorNotifier,
+) {
+    try {
+        useCase.execute(message)
+    } catch (e: Exception) {
+        notifier.notify(message.sender, e.message ?: "Unknown error")
+    }
+}
 
 class SmsReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -29,6 +43,7 @@ class SmsReceiver : BroadcastReceiver() {
                         AccountManagerOAuthTokenProvider(context),
                     )
                 }
+                val notifier = AndroidSmsForwardingErrorNotifier(context)
                 messages.groupBy { it.originatingAddress }.forEach { (sender, parts) ->
                     val body = parts.joinToString("") { it.messageBody }
                     val smsMessage = SmsMessage(
@@ -36,10 +51,11 @@ class SmsReceiver : BroadcastReceiver() {
                         body = body,
                         timestamp = System.currentTimeMillis(),
                     )
-                    SmsForwardUseCase(
-                        configRepository = configRepository,
-                        emailSendRepository = emailSendRepository,
-                    ).execute(smsMessage)
+                    forwardWithNotification(
+                        SmsForwardUseCase(configRepository, emailSendRepository),
+                        smsMessage,
+                        notifier,
+                    )
                 }
             } finally {
                 pendingResult.finish()
