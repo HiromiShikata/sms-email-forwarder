@@ -1,5 +1,7 @@
 package com.hiromi_shikata.smsemailforwarder.domain.repository
 
+import java.io.File
+
 interface ApkDownloadRepository {
-    fun enqueueDownload(url: String, fileName: String): Long
+    fun download(url: String): File
 }
