@@ -26,4 +26,5 @@
     <string name="choose_google_account">Choose Google Account</string>
     <string name="no_account_selected">No account selected</string>
     <string name="forwarding_active_google">Forwarding SMS via Google Account: %s → %s</string>
+    <string name="google_auth_permission_denied">Google Account permission denied. Please choose the account again and grant access.</string>
 </resources>
