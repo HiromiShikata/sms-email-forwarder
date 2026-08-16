@@ -18,7 +18,7 @@
     <string name="setup_required">Setup required — tap Settings to configure email</string>
     <string name="permissions_granted">SMS permissions granted ✓</string>
     <string name="permissions_required">SMS permissions required — tap to grant</string>
-    <string name="update_available">Update available: v%s — tap to download</string>
+    <string name="update_available">Update available: v%s — tap to install</string>
     <string name="auth_mode_label">Authentication Mode</string>
     <string name="auth_mode_smtp">SMTP (app password)</string>
     <string name="auth_mode_google_account">Google Account (on this device)</string>
