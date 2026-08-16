@@ -34,8 +34,23 @@ android {
         jvmTarget = '17'
     }
 
+    def keystoreFile = System.getenv("KEYSTORE_FILE")
+    if (keystoreFile) {
+        signingConfigs {
+            consistent {
+                storeFile file(keystoreFile)
+                storePassword System.getenv("RELEASE_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("RELEASE_KEY_ALIAS")
+                keyPassword System.getenv("RELEASE_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug {
+            if (keystoreFile) {
+                signingConfig signingConfigs.consistent
+            }
             enableUnitTestCoverage true
         }
     }
