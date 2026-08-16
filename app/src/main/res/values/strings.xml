@@ -27,4 +27,6 @@
     <string name="no_account_selected">No account selected</string>
     <string name="forwarding_active_google">Forwarding SMS via Google Account: %s → %s</string>
     <string name="google_auth_permission_denied">Google Account permission denied. Please choose the account again and grant access.</string>
+    <string name="downloading">Downloading update…</string>
+    <string name="download_failed">Download failed. Please check your connection and try again.</string>
 </resources>

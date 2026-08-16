@@ -4,31 +4,32 @@ import com.hiromi_shikata.smsemailforwarder.domain.repository.ApkDownloadReposit
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.io.File
 
 class ApkDownloadUseCaseTest {
     private val repository: ApkDownloadRepository = mock()
     private val useCase = ApkDownloadUseCase(repository)
 
     @Test
-    fun `execute enqueues download and returns download id`() {
+    fun `execute returns file from repository`() {
         val url = "https://github.com/HiromiShikata/sms-email-forwarder/releases/download/v1.0.0/sms-email-forwarder_universal.apk"
-        val fileName = "sms-email-forwarder_universal.apk"
-        whenever(repository.enqueueDownload(url, fileName)).thenReturn(42L)
+        val expectedFile = File("/cache/update.apk")
+        whenever(repository.download(url)).thenReturn(expectedFile)
 
-        val downloadId = useCase.execute(url, fileName)
+        val result = useCase.execute(url)
 
-        assertEquals(42L, downloadId)
+        assertEquals(expectedFile, result)
     }
 
     @Test
-    fun `execute passes url and filename to repository`() {
+    fun `execute passes url to repository`() {
         val url = "https://example.com/app.apk"
-        val fileName = "app.apk"
-        whenever(repository.enqueueDownload(url, fileName)).thenReturn(1L)
+        whenever(repository.download(url)).thenReturn(File("/cache/update.apk"))
 
-        useCase.execute(url, fileName)
+        useCase.execute(url)
 
-        org.mockito.kotlin.verify(repository).enqueueDownload(url, fileName)
+        verify(repository).download(url)
     }
 }
