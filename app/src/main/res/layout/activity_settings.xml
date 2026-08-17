@@ -47,6 +47,7 @@
                 android:id="@+id/authModeGoogleAccount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:checked="true"
                 android:text="@string/auth_mode_google_account" />
 
         </RadioGroup>
@@ -55,7 +56,8 @@
             android:id="@+id/smtpSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:visibility="gone">
 
             <TextView
                 android:layout_width="match_parent"
@@ -119,8 +121,7 @@
             android:id="@+id/googleAccountSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
+            android:orientation="vertical">
 
             <TextView
                 android:layout_width="match_parent"
