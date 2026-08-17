@@ -19,7 +19,6 @@ class ForwardingConfigUpdateUseCaseTest {
             smtpPort = 587,
             smtpUsername = "user@gmail.com",
             smtpPassword = "password",
-            googleAccountName = "",
         )
 
         useCase.execute(config)

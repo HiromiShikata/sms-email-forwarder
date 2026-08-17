@@ -19,7 +19,6 @@ class SharedPrefsForwardingConfigRepository(context: Context) : ForwardingConfig
         smtpPort = prefs.getInt(KEY_SMTP_PORT, 587),
         smtpUsername = prefs.getString(KEY_SMTP_USERNAME, "") ?: "",
         smtpPassword = prefs.getString(KEY_SMTP_PASSWORD, "") ?: "",
-        googleAccountName = prefs.getString(KEY_GOOGLE_ACCOUNT_NAME, "") ?: "",
     )
 
     override fun save(config: ForwardingConfig) {
@@ -30,7 +29,6 @@ class SharedPrefsForwardingConfigRepository(context: Context) : ForwardingConfig
             .putInt(KEY_SMTP_PORT, config.smtpPort)
             .putString(KEY_SMTP_USERNAME, config.smtpUsername)
             .putString(KEY_SMTP_PASSWORD, config.smtpPassword)
-            .putString(KEY_GOOGLE_ACCOUNT_NAME, config.googleAccountName)
             .apply()
     }
 
@@ -42,6 +40,5 @@ class SharedPrefsForwardingConfigRepository(context: Context) : ForwardingConfig
         private const val KEY_SMTP_PORT = "smtp_port"
         private const val KEY_SMTP_USERNAME = "smtp_username"
         private const val KEY_SMTP_PASSWORD = "smtp_password"
-        private const val KEY_GOOGLE_ACCOUNT_NAME = "google_account_name"
     }
 }

@@ -127,22 +127,36 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="@string/google_account_label"
+                android:text="@string/gmail_address_label"
                 android:textStyle="bold" />
 
-            <Button
-                android:id="@+id/chooseAccountButton"
+            <EditText
+                android:id="@+id/gmailAddressInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/choose_google_account" />
+                android:inputType="textEmailAddress"
+                android:hint="@string/gmail_address_hint" />
 
             <TextView
-                android:id="@+id/selectedAccountText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/gmail_app_password_label"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/gmailAppPasswordInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:hint="@string/gmail_app_password_hint" />
+
+            <Button
+                android:id="@+id/getAppPasswordButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="@string/no_account_selected" />
+                android:text="@string/get_app_password" />
 
         </LinearLayout>
 

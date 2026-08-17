@@ -20,7 +20,6 @@ class ForwardingConfigGetUseCaseTest {
             smtpPort = 587,
             smtpUsername = "user@gmail.com",
             smtpPassword = "password",
-            googleAccountName = "",
         )
         whenever(repository.get()).thenReturn(expected)
 
