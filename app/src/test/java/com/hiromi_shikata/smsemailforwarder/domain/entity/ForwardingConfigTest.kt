@@ -12,17 +12,15 @@ class ForwardingConfigTest {
         smtpPort = 587,
         smtpUsername = "user@gmail.com",
         smtpPassword = "app-password",
-        googleAccountName = "",
     )
 
     private val completeGoogleAccountConfig = ForwardingConfig(
         destinationEmail = "dest@example.com",
         authMode = EmailAuthMode.GOOGLE_ACCOUNT,
-        smtpHost = "",
-        smtpPort = 0,
-        smtpUsername = "",
-        smtpPassword = "",
-        googleAccountName = "user@gmail.com",
+        smtpHost = "smtp.gmail.com",
+        smtpPort = 587,
+        smtpUsername = "user@gmail.com",
+        smtpPassword = "app-password",
     )
 
     @Test
@@ -61,7 +59,7 @@ class ForwardingConfigTest {
     }
 
     @Test
-    fun `isComplete returns true for google account mode when destination email and account name are set`() {
+    fun `isComplete returns true for google account mode when destination email and smtp credentials are set`() {
         assertTrue(completeGoogleAccountConfig.isComplete)
     }
 
@@ -71,21 +69,13 @@ class ForwardingConfigTest {
     }
 
     @Test
-    fun `isComplete returns false for google account mode when google account name is blank`() {
-        assertFalse(completeGoogleAccountConfig.copy(googleAccountName = "").isComplete)
+    fun `isComplete returns false for google account mode when gmail address is blank`() {
+        assertFalse(completeGoogleAccountConfig.copy(smtpUsername = "").isComplete)
     }
 
     @Test
-    fun `isComplete returns false for google account mode even when smtp fields are populated but account name is blank`() {
-        assertFalse(
-            completeGoogleAccountConfig.copy(
-                smtpHost = "smtp.gmail.com",
-                smtpPort = 587,
-                smtpUsername = "user@gmail.com",
-                smtpPassword = "password",
-                googleAccountName = "",
-            ).isComplete,
-        )
+    fun `isComplete returns false for google account mode when app password is blank`() {
+        assertFalse(completeGoogleAccountConfig.copy(smtpPassword = "").isComplete)
     }
 
     @Test

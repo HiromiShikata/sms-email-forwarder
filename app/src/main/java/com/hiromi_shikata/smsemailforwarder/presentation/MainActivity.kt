@@ -72,7 +72,7 @@ class MainActivity : AppCompatActivity() {
                 !config.isComplete -> getString(R.string.setup_required)
                 config.authMode == EmailAuthMode.GOOGLE_ACCOUNT -> getString(
                     R.string.forwarding_active_google,
-                    config.googleAccountName,
+                    config.smtpUsername,
                     config.destinationEmail,
                 )
                 else -> getString(R.string.forwarding_active, config.destinationEmail)

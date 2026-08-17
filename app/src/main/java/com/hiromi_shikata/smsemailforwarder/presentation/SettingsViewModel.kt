@@ -43,13 +43,20 @@ class SettingsViewModel(
         _saved.value = true
     }
 
-    fun saveGoogleAccountConfig(destinationEmail: String, googleAccountName: String) {
+    fun saveGoogleAccountConfig(
+        destinationEmail: String,
+        gmailAddress: String,
+        appPassword: String,
+    ) {
         val existing = _config.value ?: ForwardingConfig.EMPTY
         configUpdateUseCase.execute(
             existing.copy(
                 destinationEmail = destinationEmail,
                 authMode = EmailAuthMode.GOOGLE_ACCOUNT,
-                googleAccountName = googleAccountName,
+                smtpHost = "smtp.gmail.com",
+                smtpPort = 587,
+                smtpUsername = gmailAddress,
+                smtpPassword = appPassword,
             ),
         )
         _saved.value = true

@@ -13,6 +13,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+
 class SmsReceiverForwardWithNotificationTest {
 
     private val configRepository: ForwardingConfigRepository = mock()
@@ -26,7 +27,6 @@ class SmsReceiverForwardWithNotificationTest {
         smtpPort = 587,
         smtpUsername = "sender@gmail.com",
         smtpPassword = "password",
-        googleAccountName = "",
     )
 
     private val message = SmsMessage(
@@ -38,12 +38,12 @@ class SmsReceiverForwardWithNotificationTest {
     @Test
     fun `forwardWithNotification notifies on send failure`() {
         whenever(configRepository.get()).thenReturn(completeConfig)
-        whenever(emailSendRepository.send(any(), any())).thenThrow(RuntimeException("Gmail API error 401"))
+        whenever(emailSendRepository.send(any(), any())).thenThrow(RuntimeException("SMTP send error"))
         val useCase = SmsForwardUseCase(configRepository, emailSendRepository)
 
         forwardWithNotification(useCase, message, notifier)
 
-        verify(notifier).notify("+1234567890", "Gmail API error 401")
+        verify(notifier).notify("+1234567890", "SMTP send error")
     }
 
     @Test
@@ -70,7 +70,7 @@ class SmsReceiverForwardWithNotificationTest {
     fun `forwardWithNotification uses exception message in notification`() {
         whenever(configRepository.get()).thenReturn(completeConfig)
         whenever(emailSendRepository.send(any(), any()))
-            .thenThrow(IllegalStateException("Google auth token unavailable for sender@gmail.com. Open SMS Email Forwarder and re-select your Google Account in Settings."))
+            .thenThrow(IllegalStateException("Authentication credentials invalid for sender@gmail.com."))
 
         val useCase = SmsForwardUseCase(configRepository, emailSendRepository)
 
@@ -78,7 +78,7 @@ class SmsReceiverForwardWithNotificationTest {
 
         verify(notifier).notify(
             "+1234567890",
-            "Google auth token unavailable for sender@gmail.com. Open SMS Email Forwarder and re-select your Google Account in Settings.",
+            "Authentication credentials invalid for sender@gmail.com.",
         )
     }
 }

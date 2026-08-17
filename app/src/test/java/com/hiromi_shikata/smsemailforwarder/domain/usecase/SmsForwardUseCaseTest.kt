@@ -22,7 +22,6 @@ class SmsForwardUseCaseTest {
         smtpPort = 587,
         smtpUsername = "sender@gmail.com",
         smtpPassword = "app-password",
-        googleAccountName = "",
     )
 
     private val smsMessage = SmsMessage(

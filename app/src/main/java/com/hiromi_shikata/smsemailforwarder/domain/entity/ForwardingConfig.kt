@@ -7,7 +7,6 @@ data class ForwardingConfig(
     val smtpPort: Int,
     val smtpUsername: String,
     val smtpPassword: String,
-    val googleAccountName: String,
 ) {
     val isComplete: Boolean
         get() = destinationEmail.isNotBlank() && when (authMode) {
@@ -15,7 +14,7 @@ data class ForwardingConfig(
                 smtpPort > 0 &&
                 smtpUsername.isNotBlank() &&
                 smtpPassword.isNotBlank()
-            EmailAuthMode.GOOGLE_ACCOUNT -> googleAccountName.isNotBlank()
+            EmailAuthMode.GOOGLE_ACCOUNT -> smtpUsername.isNotBlank() && smtpPassword.isNotBlank()
         }
 
     companion object {
@@ -26,7 +25,6 @@ data class ForwardingConfig(
             smtpPort = 587,
             smtpUsername = "",
             smtpPassword = "",
-            googleAccountName = "",
         )
     }
 }

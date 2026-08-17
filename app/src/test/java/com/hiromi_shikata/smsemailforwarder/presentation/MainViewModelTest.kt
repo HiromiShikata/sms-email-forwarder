@@ -36,7 +36,6 @@ class MainViewModelTest {
         smtpPort = 587,
         smtpUsername = "user@gmail.com",
         smtpPassword = "password",
-        googleAccountName = "",
     )
 
     @Before

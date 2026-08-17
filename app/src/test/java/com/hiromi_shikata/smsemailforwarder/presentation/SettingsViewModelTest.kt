@@ -9,7 +9,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -29,7 +28,6 @@ class SettingsViewModelTest {
         smtpPort = 587,
         smtpUsername = "user@gmail.com",
         smtpPassword = "password",
-        googleAccountName = "",
     )
 
     @Test
@@ -94,18 +92,23 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `saveGoogleAccountConfig delegates to use case with google account auth mode`() {
+    fun `saveGoogleAccountConfig delegates to use case with google account auth mode using smtp gmail server`() {
         whenever(configGetUseCase.execute()).thenReturn(storedSmtpConfig)
         viewModel.loadConfig()
 
         viewModel.saveGoogleAccountConfig(
             destinationEmail = "dest@example.com",
-            googleAccountName = "user@gmail.com",
+            gmailAddress = "user@gmail.com",
+            appPassword = "xxxx-yyyy-zzzz",
         )
 
         verify(configUpdateUseCase).execute(
             org.mockito.kotlin.argThat {
-                authMode == EmailAuthMode.GOOGLE_ACCOUNT && googleAccountName == "user@gmail.com"
+                authMode == EmailAuthMode.GOOGLE_ACCOUNT &&
+                    smtpHost == "smtp.gmail.com" &&
+                    smtpPort == 587 &&
+                    smtpUsername == "user@gmail.com" &&
+                    smtpPassword == "xxxx-yyyy-zzzz"
             },
         )
     }
@@ -117,7 +120,8 @@ class SettingsViewModelTest {
 
         viewModel.saveGoogleAccountConfig(
             destinationEmail = "dest@example.com",
-            googleAccountName = "user@gmail.com",
+            gmailAddress = "user@gmail.com",
+            appPassword = "xxxx-yyyy-zzzz",
         )
 
         assertTrue(viewModel.saved.value == true)
