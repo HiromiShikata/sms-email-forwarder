@@ -94,7 +94,7 @@ class ForwardingConfigTest {
     }
 
     @Test
-    fun `EMPTY defaults to SMTP auth mode`() {
-        assertTrue(ForwardingConfig.EMPTY.authMode == EmailAuthMode.SMTP)
+    fun `EMPTY defaults to Google Account auth mode`() {
+        assertTrue(ForwardingConfig.EMPTY.authMode == EmailAuthMode.GOOGLE_ACCOUNT)
     }
 }

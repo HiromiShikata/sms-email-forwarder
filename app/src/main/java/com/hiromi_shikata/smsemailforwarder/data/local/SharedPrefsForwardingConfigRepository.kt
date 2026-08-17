@@ -12,9 +12,9 @@ class SharedPrefsForwardingConfigRepository(context: Context) : ForwardingConfig
 
     override fun get(): ForwardingConfig = ForwardingConfig(
         destinationEmail = prefs.getString(KEY_DEST_EMAIL, "") ?: "",
-        authMode = prefs.getString(KEY_AUTH_MODE, EmailAuthMode.SMTP.name)
-            ?.let { runCatching { EmailAuthMode.valueOf(it) }.getOrDefault(EmailAuthMode.SMTP) }
-            ?: EmailAuthMode.SMTP,
+        authMode = prefs.getString(KEY_AUTH_MODE, EmailAuthMode.GOOGLE_ACCOUNT.name)
+            ?.let { runCatching { EmailAuthMode.valueOf(it) }.getOrDefault(EmailAuthMode.GOOGLE_ACCOUNT) }
+            ?: EmailAuthMode.GOOGLE_ACCOUNT,
         smtpHost = prefs.getString(KEY_SMTP_HOST, "smtp.gmail.com") ?: "smtp.gmail.com",
         smtpPort = prefs.getInt(KEY_SMTP_PORT, 587),
         smtpUsername = prefs.getString(KEY_SMTP_USERNAME, "") ?: "",

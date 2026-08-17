@@ -21,7 +21,7 @@ data class ForwardingConfig(
     companion object {
         val EMPTY = ForwardingConfig(
             destinationEmail = "",
-            authMode = EmailAuthMode.SMTP,
+            authMode = EmailAuthMode.GOOGLE_ACCOUNT,
             smtpHost = "smtp.gmail.com",
             smtpPort = 587,
             smtpUsername = "",
