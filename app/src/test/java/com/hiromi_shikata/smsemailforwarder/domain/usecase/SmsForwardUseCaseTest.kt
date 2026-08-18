@@ -24,6 +24,15 @@ class SmsForwardUseCaseTest {
         smtpPassword = "app-password",
     )
 
+    private val completeGoogleAccountConfig = ForwardingConfig(
+        destinationEmail = "dest@example.com",
+        authMode = com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode.GOOGLE_ACCOUNT,
+        smtpHost = "smtp.gmail.com",
+        smtpPort = 587,
+        smtpUsername = "user@gmail.com",
+        smtpPassword = "xxxx-yyyy-zzzz",
+    )
+
     private val smsMessage = SmsMessage(
         sender = "+1234567890",
         body = "Test SMS body",
@@ -37,6 +46,15 @@ class SmsForwardUseCaseTest {
         useCase.execute(smsMessage)
 
         verify(emailSendRepository).send(smsMessage, completeConfig)
+    }
+
+    @Test
+    fun `execute sends email when google account config is complete`() {
+        whenever(configRepository.get()).thenReturn(completeGoogleAccountConfig)
+
+        useCase.execute(smsMessage)
+
+        verify(emailSendRepository).send(smsMessage, completeGoogleAccountConfig)
     }
 
     @Test
