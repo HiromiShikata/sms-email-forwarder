@@ -27,6 +27,13 @@
     <string name="gmail_app_password_label">App Password</string>
     <string name="gmail_app_password_hint">xxxx xxxx xxxx xxxx</string>
     <string name="get_app_password">Get App Password at myaccount.google.com/apppasswords →</string>
+    <string name="google_account_section_info">An App Password lets this app send email via your Gmail account without your main password. App Passwords require 2-Step Verification to be enabled on your Google Account (myaccount.google.com/security).</string>
+    <string name="test_connection">Test Connection</string>
+    <string name="test_connection_testing">Testing…</string>
+    <string name="test_connection_success_title">Connection Successful</string>
+    <string name="test_connection_success_message">A test email was sent to your destination address. Check your inbox to confirm it arrived.</string>
+    <string name="test_connection_failure_title">Connection Failed</string>
+    <string name="test_connection_unknown_error">An unknown error occurred.</string>
     <string name="forwarding_active_google">Forwarding SMS via Gmail: %s → %s</string>
     <string name="downloading">Downloading update…</string>
     <string name="download_failed">Download failed. Please check your connection and try again.</string>

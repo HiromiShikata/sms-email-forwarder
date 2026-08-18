@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.RadioGroup
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModelProvider
@@ -42,6 +43,28 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.getAppPasswordButton.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://myaccount.google.com/apppasswords")))
+        }
+
+        binding.testGoogleAccountButton.setOnClickListener {
+            binding.testGoogleAccountButton.isEnabled = false
+            binding.testGoogleAccountButton.text = getString(R.string.test_connection_testing)
+            viewModel.testGoogleAccountConfig(
+                destinationEmail = binding.destinationEmailInput.text.toString(),
+                gmailAddress = binding.gmailAddressInput.text.toString(),
+                appPassword = binding.gmailAppPasswordInput.text.toString(),
+            )
+        }
+
+        binding.testSmtpButton.setOnClickListener {
+            binding.testSmtpButton.isEnabled = false
+            binding.testSmtpButton.text = getString(R.string.test_connection_testing)
+            viewModel.testSmtpConfig(
+                destinationEmail = binding.destinationEmailInput.text.toString(),
+                smtpHost = binding.smtpHostInput.text.toString(),
+                smtpPort = binding.smtpPortInput.text.toString(),
+                smtpUsername = binding.smtpUsernameInput.text.toString(),
+                smtpPassword = binding.smtpPasswordInput.text.toString(),
+            )
         }
 
         binding.saveButton.setOnClickListener {
@@ -85,6 +108,25 @@ class SettingsActivity : AppCompatActivity() {
         viewModel.saved.observe(this) {
             Toast.makeText(this, getString(R.string.settings_saved), Toast.LENGTH_SHORT).show()
             finish()
+        }
+
+        viewModel.testResult.observe(this) { result ->
+            val (title, message) = if (result.isSuccess) {
+                getString(R.string.test_connection_success_title) to
+                    getString(R.string.test_connection_success_message)
+            } else {
+                getString(R.string.test_connection_failure_title) to
+                    (result.exceptionOrNull()?.message ?: getString(R.string.test_connection_unknown_error))
+            }
+            AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+            binding.testGoogleAccountButton.isEnabled = true
+            binding.testGoogleAccountButton.text = getString(R.string.test_connection)
+            binding.testSmtpButton.isEnabled = true
+            binding.testSmtpButton.text = getString(R.string.test_connection)
         }
 
         viewModel.loadConfig()
