@@ -115,6 +115,13 @@
                 android:inputType="textPassword"
                 android:hint="@string/smtp_password_hint" />
 
+            <Button
+                android:id="@+id/testSmtpButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/test_connection" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -122,6 +129,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/google_account_section_info" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -157,6 +170,13 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/get_app_password" />
+
+            <Button
+                android:id="@+id/testGoogleAccountButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/test_connection" />
 
         </LinearLayout>
 
