@@ -1,7 +1,4 @@
 pluginManagement {
-    plugins {
-        id 'org.jetbrains.kotlin.android' version '2.1.21'
-    }
     repositories {
         google()
         mavenCentral()
