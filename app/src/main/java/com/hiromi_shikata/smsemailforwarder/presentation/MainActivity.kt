@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var viewModel: MainViewModel
     private lateinit var apkDownloadUseCase: ApkDownloadUseCase
+    private var hasAutoOpenedSettings = false
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -76,6 +77,10 @@ class MainActivity : AppCompatActivity() {
                     config.destinationEmail,
                 )
                 else -> getString(R.string.forwarding_active, config.destinationEmail)
+            }
+            if (!config.isComplete && !hasAutoOpenedSettings) {
+                hasAutoOpenedSettings = true
+                startActivity(Intent(this, SettingsActivity::class.java))
             }
         }
 

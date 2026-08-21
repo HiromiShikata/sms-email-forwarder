@@ -41,4 +41,8 @@
     <string name="forwarding_error_body">Could not forward SMS from %1$s: %2$s</string>
     <string name="forwarding_error_channel_name">Forwarding Errors</string>
     <string name="forwarding_error_channel_description">Alerts when SMS email forwarding fails</string>
+    <string name="setup_required_notification_title">SMS not forwarded — setup required</string>
+    <string name="setup_required_notification_body">SMS from %s was received but not forwarded. Tap to open the app and complete App Password setup.</string>
+    <string name="setup_required_channel_name">Setup Required</string>
+    <string name="setup_required_channel_description">Alerts when SMS cannot be forwarded due to incomplete configuration</string>
 </resources>
