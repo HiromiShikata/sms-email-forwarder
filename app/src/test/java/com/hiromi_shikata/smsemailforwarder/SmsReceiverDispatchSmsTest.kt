@@ -14,7 +14,7 @@ class SmsReceiverDispatchSmsTest {
 
     private val setupNotifier: SmsForwardingSetupNotifier = mock()
     private val enqueued = mutableListOf<Triple<String, String, Long>>()
-    private val enqueue = { sender: String, body: String, timestamp: Long ->
+    private val enqueue: (String, String, Long) -> Unit = { sender, body, timestamp ->
         enqueued.add(Triple(sender, body, timestamp))
     }
 
