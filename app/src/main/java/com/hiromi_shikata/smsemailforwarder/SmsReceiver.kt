@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
 import androidx.work.Data
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import com.hiromi_shikata.smsemailforwarder.data.local.AndroidSmsForwardingSetupNotifier
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingConfigRepository
@@ -42,6 +44,22 @@ internal fun dispatchSms(
     enqueue(sender, body, timestamp)
 }
 
+internal fun buildSmsForwardWorkRequest(
+    sender: String,
+    body: String,
+    timestamp: Long,
+): OneTimeWorkRequest {
+    val data = Data.Builder()
+        .putString(SmsForwardWorker.KEY_SENDER, sender)
+        .putString(SmsForwardWorker.KEY_BODY, body)
+        .putLong(SmsForwardWorker.KEY_TIMESTAMP, timestamp)
+        .build()
+    return OneTimeWorkRequestBuilder<SmsForwardWorker>()
+        .setInputData(data)
+        .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+        .build()
+}
+
 class SmsReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
@@ -58,16 +76,7 @@ class SmsReceiver : BroadcastReceiver() {
                 config = config,
                 setupNotifier = setupNotifier,
             ) { s, b, t ->
-                val data = Data.Builder()
-                    .putString(SmsForwardWorker.KEY_SENDER, s)
-                    .putString(SmsForwardWorker.KEY_BODY, b)
-                    .putLong(SmsForwardWorker.KEY_TIMESTAMP, t)
-                    .build()
-                workManager.enqueue(
-                    OneTimeWorkRequestBuilder<SmsForwardWorker>()
-                        .setInputData(data)
-                        .build(),
-                )
+                workManager.enqueue(buildSmsForwardWorkRequest(s, b, t))
             }
         }
     }
