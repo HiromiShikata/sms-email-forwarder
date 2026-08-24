@@ -45,4 +45,8 @@
     <string name="setup_required_notification_body">SMS from %s was received but not forwarded. Tap to open the app and complete App Password setup.</string>
     <string name="setup_required_channel_name">Setup Required</string>
     <string name="setup_required_channel_description">Alerts when SMS cannot be forwarded due to incomplete configuration</string>
+    <string name="forwarding_in_progress_channel_name">SMS Forwarding</string>
+    <string name="forwarding_in_progress_channel_description">Shown while an SMS is being forwarded via email</string>
+    <string name="forwarding_in_progress_title">Forwarding SMS…</string>
+    <string name="disable_battery_optimization">Disable battery optimization for reliable SMS forwarding</string>
 </resources>

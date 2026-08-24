@@ -3,14 +3,18 @@ package com.hiromi_shikata.smsemailforwarder.presentation
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.content.getSystemService
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -27,6 +31,9 @@ import com.hiromi_shikata.smsemailforwarder.domain.usecase.ForwardingConfigGetUs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+internal fun resolveBatteryOptimizationButtonVisibility(isIgnoringBatteryOptimizations: Boolean): Int =
+    if (isIgnoringBatteryOptimizations) View.GONE else View.VISIBLE
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -60,6 +67,14 @@ class MainActivity : AppCompatActivity() {
 
         binding.settingsButton.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
+        binding.batteryOptimizationButton.setOnClickListener {
+            startActivity(
+                Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:$packageName")
+                },
+            )
         }
 
         binding.updateButton.setOnClickListener {
@@ -101,6 +116,11 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.loadConfig()
+        val powerManager = getSystemService<PowerManager>() ?: return
+        binding.batteryOptimizationButton.visibility =
+            resolveBatteryOptimizationButtonVisibility(
+                powerManager.isIgnoringBatteryOptimizations(packageName),
+            )
     }
 
     private fun downloadAndInstall(downloadUrl: String, version: String) {
