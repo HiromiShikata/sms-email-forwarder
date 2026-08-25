@@ -49,4 +49,12 @@
     <string name="forwarding_in_progress_channel_description">Shown while an SMS is being forwarded via email</string>
     <string name="forwarding_in_progress_title">Forwarding SMS…</string>
     <string name="disable_battery_optimization">Disable battery optimization for reliable SMS forwarding</string>
+    <string name="app_update_channel_name">App Updates</string>
+    <string name="app_update_channel_description">Alerts when a new version of the app is available</string>
+    <string name="app_update_notification_title">Update Available</string>
+    <string name="app_update_notification_body">Version %s is available. Tap to open the app and update.</string>
+    <string name="app_update_dialog_title">Update Available</string>
+    <string name="app_update_dialog_message">Version %s is available. Would you like to download and install it now?</string>
+    <string name="app_update_dialog_positive">Update Now</string>
+    <string name="app_update_dialog_negative">Later</string>
 </resources>
