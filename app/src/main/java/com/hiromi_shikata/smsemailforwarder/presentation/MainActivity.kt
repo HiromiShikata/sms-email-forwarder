@@ -11,6 +11,7 @@ import android.provider.Settings
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -24,6 +25,7 @@ import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingConf
 import com.hiromi_shikata.smsemailforwarder.data.remote.CacheApkDownloadRepository
 import com.hiromi_shikata.smsemailforwarder.data.remote.GithubAppUpdateRepository
 import com.hiromi_shikata.smsemailforwarder.databinding.ActivityMainBinding
+import com.hiromi_shikata.smsemailforwarder.domain.entity.AppUpdate
 import com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.ApkDownloadUseCase
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.AppUpdateCheckUseCase
@@ -35,11 +37,15 @@ import kotlinx.coroutines.withContext
 internal fun resolveBatteryOptimizationButtonVisibility(isIgnoringBatteryOptimizations: Boolean): Int =
     if (isIgnoringBatteryOptimizations) View.GONE else View.VISIBLE
 
+internal fun shouldShowUpdateDialog(update: AppUpdate?, hasShownUpdateDialog: Boolean): Boolean =
+    update != null && !hasShownUpdateDialog
+
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var viewModel: MainViewModel
     private lateinit var apkDownloadUseCase: ApkDownloadUseCase
     private var hasAutoOpenedSettings = false
+    private var hasShownUpdateDialog = false
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -105,6 +111,19 @@ class MainActivity : AppCompatActivity() {
                 binding.updateButton.text = getString(R.string.update_available, update.latestVersion)
             } else {
                 binding.updateButton.visibility = View.GONE
+            }
+            if (shouldShowUpdateDialog(update, hasShownUpdateDialog)) {
+                hasShownUpdateDialog = true
+                AlertDialog.Builder(this)
+                    .setTitle(getString(R.string.app_update_dialog_title))
+                    .setMessage(getString(R.string.app_update_dialog_message, update!!.latestVersion))
+                    .setPositiveButton(getString(R.string.app_update_dialog_positive)) { _, _ ->
+                        downloadAndInstall(update.downloadUrl, update.latestVersion)
+                    }
+                    .setNegativeButton(getString(R.string.app_update_dialog_negative)) { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                    .show()
             }
         }
 
