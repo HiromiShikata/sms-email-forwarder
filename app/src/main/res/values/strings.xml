@@ -57,4 +57,11 @@
     <string name="app_update_dialog_message">Version %s is available. Would you like to download and install it now?</string>
     <string name="app_update_dialog_positive">Update Now</string>
     <string name="app_update_dialog_negative">Later</string>
+    <string name="view_log">View Forwarding Log</string>
+    <string name="forwarding_history">Forwarding History</string>
+    <string name="share_log">Share Log</string>
+    <string name="no_log_entries">No forwarding history yet.</string>
+    <string name="status_forwarded">Forwarded</string>
+    <string name="status_failed">Failed</string>
+    <string name="status_setup_incomplete">Setup Incomplete</string>
 </resources>

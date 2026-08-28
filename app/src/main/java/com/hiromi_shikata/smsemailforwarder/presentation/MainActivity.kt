@@ -71,6 +71,10 @@ class MainActivity : AppCompatActivity() {
             ),
         )[MainViewModel::class.java]
 
+        binding.viewLogButton.setOnClickListener {
+            startActivity(Intent(this, ForwardingLogActivity::class.java))
+        }
+
         binding.settingsButton.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }

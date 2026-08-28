@@ -33,6 +33,10 @@
             android:name=".presentation.SettingsActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".presentation.ForwardingLogActivity"
+            android:exported="false" />
+
         <receiver
             android:name=".SmsReceiver"
             android:exported="true"

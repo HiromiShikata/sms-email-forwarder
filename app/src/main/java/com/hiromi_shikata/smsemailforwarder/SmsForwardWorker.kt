@@ -9,6 +9,7 @@ import androidx.work.WorkerParameters
 import com.hiromi_shikata.smsemailforwarder.data.local.AndroidSmsForwardingErrorNotifier
 import com.hiromi_shikata.smsemailforwarder.data.local.AndroidSmsForwardingInProgressNotifier
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingConfigRepository
+import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingLogRepository
 import com.hiromi_shikata.smsemailforwarder.data.remote.SmtpEmailSendRepository
 import com.hiromi_shikata.smsemailforwarder.domain.entity.SmsMessage
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.SmsForwardUseCase
@@ -45,10 +46,12 @@ class SmsForwardWorker(context: Context, params: WorkerParameters) : Worker(cont
         val configRepository = SharedPrefsForwardingConfigRepository(applicationContext)
         val emailSendRepository = SmtpEmailSendRepository()
         val notifier = AndroidSmsForwardingErrorNotifier(applicationContext)
+        val logRepository = SharedPrefsForwardingLogRepository.create(applicationContext)
         forwardWithNotification(
             SmsForwardUseCase(configRepository, emailSendRepository),
             SmsMessage(sender = sender, body = body, timestamp = timestamp),
             notifier,
+            logRepository,
         )
         return Result.success()
     }
