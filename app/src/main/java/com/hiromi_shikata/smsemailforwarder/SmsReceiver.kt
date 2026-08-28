@@ -11,8 +11,12 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import com.hiromi_shikata.smsemailforwarder.data.local.AndroidSmsForwardingSetupNotifier
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingConfigRepository
+import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingLogRepository
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingConfig
+import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingLogEntry
+import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingLogEntryStatus
 import com.hiromi_shikata.smsemailforwarder.domain.entity.SmsMessage
+import com.hiromi_shikata.smsemailforwarder.domain.repository.ForwardingLogRepository
 import com.hiromi_shikata.smsemailforwarder.domain.repository.SmsForwardingErrorNotifier
 import com.hiromi_shikata.smsemailforwarder.domain.repository.SmsForwardingSetupNotifier
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.SmsForwardUseCase
@@ -21,11 +25,28 @@ internal fun forwardWithNotification(
     useCase: SmsForwardUseCase,
     message: SmsMessage,
     notifier: SmsForwardingErrorNotifier,
+    logRepository: ForwardingLogRepository,
 ) {
     try {
         useCase.execute(message)
+        logRepository.save(
+            ForwardingLogEntry(
+                timestamp = message.timestamp,
+                sender = message.sender,
+                status = ForwardingLogEntryStatus.FORWARDED,
+                errorMessage = null,
+            ),
+        )
     } catch (e: Exception) {
         notifier.notify(message.sender, e.message ?: "Unknown error")
+        logRepository.save(
+            ForwardingLogEntry(
+                timestamp = message.timestamp,
+                sender = message.sender,
+                status = ForwardingLogEntryStatus.FAILED,
+                errorMessage = e.message,
+            ),
+        )
     }
 }
 
@@ -35,10 +56,19 @@ internal fun dispatchSms(
     timestamp: Long,
     config: ForwardingConfig,
     setupNotifier: SmsForwardingSetupNotifier,
+    logRepository: ForwardingLogRepository,
     enqueue: (sender: String, body: String, timestamp: Long) -> Unit,
 ) {
     if (!config.isComplete) {
         setupNotifier.notify(sender)
+        logRepository.save(
+            ForwardingLogEntry(
+                timestamp = timestamp,
+                sender = sender,
+                status = ForwardingLogEntryStatus.SETUP_INCOMPLETE,
+                errorMessage = null,
+            ),
+        )
         return
     }
     enqueue(sender, body, timestamp)
@@ -66,6 +96,7 @@ class SmsReceiver : BroadcastReceiver() {
         val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
         val config = SharedPrefsForwardingConfigRepository(context).get()
         val setupNotifier = AndroidSmsForwardingSetupNotifier(context)
+        val logRepository = SharedPrefsForwardingLogRepository.create(context)
         val workManager = WorkManager.getInstance(context)
         messages.groupBy { it.originatingAddress }.forEach { (sender, parts) ->
             val body = parts.joinToString("") { it.messageBody }
@@ -75,6 +106,7 @@ class SmsReceiver : BroadcastReceiver() {
                 timestamp = System.currentTimeMillis(),
                 config = config,
                 setupNotifier = setupNotifier,
+                logRepository = logRepository,
             ) { s, b, t ->
                 workManager.enqueue(buildSmsForwardWorkRequest(s, b, t))
             }

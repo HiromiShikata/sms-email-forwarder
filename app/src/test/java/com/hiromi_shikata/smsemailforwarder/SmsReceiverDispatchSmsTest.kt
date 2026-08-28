@@ -2,10 +2,13 @@ package com.hiromi_shikata.smsemailforwarder
 
 import com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingConfig
+import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingLogEntryStatus
+import com.hiromi_shikata.smsemailforwarder.domain.repository.ForwardingLogRepository
 import com.hiromi_shikata.smsemailforwarder.domain.repository.SmsForwardingSetupNotifier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -13,6 +16,7 @@ import org.mockito.kotlin.verify
 class SmsReceiverDispatchSmsTest {
 
     private val setupNotifier: SmsForwardingSetupNotifier = mock()
+    private val logRepository: ForwardingLogRepository = mock()
     private val enqueued = mutableListOf<Triple<String, String, Long>>()
     private val enqueue: (String, String, Long) -> Unit = { sender, body, timestamp ->
         enqueued.add(Triple(sender, body, timestamp))
@@ -35,11 +39,31 @@ class SmsReceiverDispatchSmsTest {
             timestamp = 1000L,
             config = ForwardingConfig.EMPTY,
             setupNotifier = setupNotifier,
+            logRepository = logRepository,
             enqueue = enqueue,
         )
 
         verify(setupNotifier).notify("+1234567890")
         assertTrue(enqueued.isEmpty())
+    }
+
+    @Test
+    fun `dispatchSms saves setup incomplete log entry when config is incomplete`() {
+        dispatchSms(
+            sender = "+1234567890",
+            body = "Test SMS",
+            timestamp = 1000L,
+            config = ForwardingConfig.EMPTY,
+            setupNotifier = setupNotifier,
+            logRepository = logRepository,
+            enqueue = enqueue,
+        )
+
+        verify(logRepository).save(argThat {
+            sender == "+1234567890" &&
+                status == ForwardingLogEntryStatus.SETUP_INCOMPLETE &&
+                errorMessage == null
+        })
     }
 
     @Test
@@ -50,11 +74,27 @@ class SmsReceiverDispatchSmsTest {
             timestamp = 1000L,
             config = completeConfig,
             setupNotifier = setupNotifier,
+            logRepository = logRepository,
             enqueue = enqueue,
         )
 
         verify(setupNotifier, never()).notify(org.mockito.kotlin.any())
         assertEquals(1, enqueued.size)
+    }
+
+    @Test
+    fun `dispatchSms does not save log entry when config is complete`() {
+        dispatchSms(
+            sender = "+1234567890",
+            body = "Test SMS",
+            timestamp = 1000L,
+            config = completeConfig,
+            setupNotifier = setupNotifier,
+            logRepository = logRepository,
+            enqueue = enqueue,
+        )
+
+        verify(logRepository, never()).save(org.mockito.kotlin.any())
     }
 
     @Test
@@ -65,6 +105,7 @@ class SmsReceiverDispatchSmsTest {
             timestamp = 2000L,
             config = ForwardingConfig.EMPTY,
             setupNotifier = setupNotifier,
+            logRepository = logRepository,
             enqueue = enqueue,
         )
 
@@ -79,6 +120,7 @@ class SmsReceiverDispatchSmsTest {
             timestamp = 5000L,
             config = completeConfig,
             setupNotifier = setupNotifier,
+            logRepository = logRepository,
             enqueue = enqueue,
         )
 
@@ -106,6 +148,7 @@ class SmsReceiverDispatchSmsTest {
             timestamp = 1000L,
             config = incompleteConfig,
             setupNotifier = setupNotifier,
+            logRepository = logRepository,
             enqueue = enqueue,
         )
 
@@ -130,6 +173,7 @@ class SmsReceiverDispatchSmsTest {
             timestamp = 3000L,
             config = smtpConfig,
             setupNotifier = setupNotifier,
+            logRepository = logRepository,
             enqueue = enqueue,
         )
 
