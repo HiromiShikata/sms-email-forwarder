@@ -57,6 +57,7 @@
     <string name="app_update_dialog_message">Version %s is available. Would you like to download and install it now?</string>
     <string name="app_update_dialog_positive">Update Now</string>
     <string name="app_update_dialog_negative">Later</string>
+    <string name="grant_sms_permission">Grant SMS Permission — tap to open app settings</string>
     <string name="view_log">View Forwarding Log</string>
     <string name="forwarding_history">Forwarding History</string>
     <string name="share_log">Share Log</string>
