@@ -37,6 +37,9 @@ import kotlinx.coroutines.withContext
 internal fun resolveBatteryOptimizationButtonVisibility(isIgnoringBatteryOptimizations: Boolean): Int =
     if (isIgnoringBatteryOptimizations) View.GONE else View.VISIBLE
 
+internal fun resolveGrantPermissionButtonVisibility(granted: Boolean): Int =
+    if (granted) View.GONE else View.VISIBLE
+
 internal fun shouldShowUpdateDialog(update: AppUpdate?, hasShownUpdateDialog: Boolean): Boolean =
     update != null && !hasShownUpdateDialog
 
@@ -77,6 +80,14 @@ class MainActivity : AppCompatActivity() {
 
         binding.settingsButton.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
+        binding.grantPermissionButton.setOnClickListener {
+            startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:$packageName")
+                },
+            )
         }
 
         binding.batteryOptimizationButton.setOnClickListener {
@@ -139,6 +150,11 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.loadConfig()
+        val smsGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.RECEIVE_SMS,
+        ) == PackageManager.PERMISSION_GRANTED
+        updatePermissionStatus(smsGranted)
         val powerManager = getSystemService<PowerManager>() ?: return
         binding.batteryOptimizationButton.visibility =
             resolveBatteryOptimizationButtonVisibility(
@@ -197,6 +213,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updatePermissionStatus(granted: Boolean) {
+        binding.grantPermissionButton.visibility = resolveGrantPermissionButtonVisibility(granted)
+        binding.permissionStatus.visibility = if (granted) View.VISIBLE else View.GONE
         binding.permissionStatus.text = if (granted) {
             getString(R.string.permissions_granted)
         } else {
