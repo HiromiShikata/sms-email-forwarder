@@ -5,34 +5,36 @@ import android.content.SharedPreferences
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingLogEntry
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingLogEntryStatus
 import com.hiromi_shikata.smsemailforwarder.domain.repository.ForwardingLogRepository
-import org.json.JSONArray
-import org.json.JSONObject
+import java.util.Base64
 
-internal fun serializeEntry(entry: ForwardingLogEntry): JSONObject = JSONObject().apply {
-    put(KEY_TIMESTAMP, entry.timestamp)
-    put(KEY_SENDER, entry.sender)
-    put(KEY_STATUS, entry.status.name)
-    if (entry.errorMessage != null) put(KEY_ERROR_MESSAGE, entry.errorMessage)
+internal fun encodeField(value: String): String =
+    Base64.getEncoder().encodeToString(value.toByteArray(Charsets.UTF_8))
+
+internal fun decodeField(encoded: String): String =
+    String(Base64.getDecoder().decode(encoded), Charsets.UTF_8)
+
+internal fun serializeEntry(entry: ForwardingLogEntry): String {
+    val errorEncoded = if (entry.errorMessage != null) encodeField(entry.errorMessage) else ""
+    return "${entry.timestamp}|${encodeField(entry.sender)}|${entry.status.name}|$errorEncoded"
 }
 
-internal fun deserializeEntry(obj: JSONObject): ForwardingLogEntry? = runCatching {
+internal fun deserializeEntry(line: String): ForwardingLogEntry? = runCatching {
+    val parts = line.split("|", limit = 4)
+    if (parts.size < 4) return null
     ForwardingLogEntry(
-        timestamp = obj.getLong(KEY_TIMESTAMP),
-        sender = obj.getString(KEY_SENDER),
-        status = ForwardingLogEntryStatus.valueOf(obj.getString(KEY_STATUS)),
-        errorMessage = if (obj.has(KEY_ERROR_MESSAGE)) obj.getString(KEY_ERROR_MESSAGE) else null,
+        timestamp = parts[0].toLong(),
+        sender = decodeField(parts[1]),
+        status = ForwardingLogEntryStatus.valueOf(parts[2]),
+        errorMessage = if (parts[3].isNotEmpty()) decodeField(parts[3]) else null,
     )
 }.getOrNull()
 
 internal fun serializeEntries(entries: List<ForwardingLogEntry>): String =
-    JSONArray().also { array ->
-        entries.forEach { array.put(serializeEntry(it)) }
-    }.toString()
+    entries.joinToString("\n") { serializeEntry(it) }
 
-internal fun deserializeEntries(json: String): List<ForwardingLogEntry> = runCatching {
-    val array = JSONArray(json)
-    (0 until array.length()).mapNotNull { deserializeEntry(array.getJSONObject(it)) }
-}.getOrDefault(emptyList())
+internal fun deserializeEntries(data: String): List<ForwardingLogEntry> =
+    if (data.isBlank()) emptyList()
+    else data.lines().mapNotNull { deserializeEntry(it) }
 
 internal fun enforceMaxEntries(
     entries: List<ForwardingLogEntry>,
@@ -40,10 +42,6 @@ internal fun enforceMaxEntries(
 ): List<ForwardingLogEntry> =
     if (entries.size > maxSize) entries.drop(entries.size - maxSize) else entries
 
-private const val KEY_TIMESTAMP = "timestamp"
-private const val KEY_SENDER = "sender"
-private const val KEY_STATUS = "status"
-private const val KEY_ERROR_MESSAGE = "errorMessage"
 private const val MAX_ENTRIES = 50
 
 class SharedPrefsForwardingLogRepository(
@@ -56,8 +54,8 @@ class SharedPrefsForwardingLogRepository(
     }
 
     override fun getAll(): List<ForwardingLogEntry> {
-        val json = prefs.getString(KEY_LOG, null) ?: return emptyList()
-        return deserializeEntries(json)
+        val data = prefs.getString(KEY_LOG, null) ?: return emptyList()
+        return deserializeEntries(data)
     }
 
     companion object {
