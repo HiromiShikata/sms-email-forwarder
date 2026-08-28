@@ -54,7 +54,7 @@ class SharedPrefsForwardingLogRepository(
     }
 
     override fun getAll(): List<ForwardingLogEntry> {
-        val data = prefs.getString(KEY_LOG, null) ?: return emptyList()
+        val data = prefs.getString(KEY_LOG, "") ?: return emptyList()
         return deserializeEntries(data)
     }
 
