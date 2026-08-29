@@ -43,6 +43,9 @@ internal fun resolveGrantPermissionButtonVisibility(granted: Boolean): Int =
 internal fun shouldShowUpdateDialog(update: AppUpdate?, hasShownUpdateDialog: Boolean): Boolean =
     update != null && !hasShownUpdateDialog
 
+internal fun resolvePermissionGrantStatus(permissions: Map<String, Boolean>): Boolean =
+    permissions.all { it.value }
+
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var viewModel: MainViewModel
@@ -53,7 +56,7 @@ class MainActivity : AppCompatActivity() {
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { permissions ->
-        updatePermissionStatus(permissions.all { it.value })
+        updatePermissionStatus(resolvePermissionGrantStatus(permissions))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,11 +86,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.grantPermissionButton.setOnClickListener {
-            startActivity(
-                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.parse("package:$packageName")
-                },
-            )
+            requestRequiredPermissions()
         }
 
         binding.batteryOptimizationButton.setOnClickListener {
