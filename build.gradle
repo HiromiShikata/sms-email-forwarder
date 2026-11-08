@@ -8,7 +8,7 @@ buildscript {
     }
 }
 
-ext.jacocoToolVersion = "0.8.15"
+ext.jacocoToolVersion = "0.8.16"
 
 apply plugin: "jacoco"
 
