@@ -131,8 +131,10 @@ internal class ForwardingLogAdapter : RecyclerView.Adapter<ForwardingLogAdapter.
                 ForwardingLogEntryStatus.FORWARDED -> itemView.context.getString(R.string.status_forwarded)
                 ForwardingLogEntryStatus.FAILED -> itemView.context.getString(R.string.status_failed)
                 ForwardingLogEntryStatus.SETUP_INCOMPLETE -> itemView.context.getString(R.string.status_setup_incomplete)
+                ForwardingLogEntryStatus.RETRYING -> itemView.context.getString(R.string.status_retrying)
             }
-            if (entry.status == ForwardingLogEntryStatus.FAILED && entry.errorMessage != null) {
+            val showsError = entry.status == ForwardingLogEntryStatus.FAILED || entry.status == ForwardingLogEntryStatus.RETRYING
+            if (showsError && entry.errorMessage != null) {
                 errorText.text = entry.errorMessage
                 errorText.visibility = View.VISIBLE
             } else {
