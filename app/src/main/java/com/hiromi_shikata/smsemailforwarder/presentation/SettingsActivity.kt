@@ -12,6 +12,7 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModelProvider
 import com.hiromi_shikata.smsemailforwarder.R
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingConfigRepository
+import com.hiromi_shikata.smsemailforwarder.data.local.SmtpPasswordUnavailableException
 import com.hiromi_shikata.smsemailforwarder.databinding.ActivitySettingsBinding
 import com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.ForwardingConfigGetUseCase
@@ -129,12 +130,20 @@ class SettingsActivity : AppCompatActivity() {
             binding.testSmtpButton.text = getString(R.string.test_connection)
         }
 
-        viewModel.loadConfig()
+        loadConfigOrShowError()
     }
 
     override fun onSupportNavigateUp(): Boolean {
         onBackPressedDispatcher.onBackPressed()
         return true
+    }
+
+    private fun loadConfigOrShowError() {
+        try {
+            viewModel.loadConfig()
+        } catch (e: SmtpPasswordUnavailableException) {
+            Toast.makeText(this, getString(R.string.smtp_password_unavailable), Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun updateSectionVisibility(googleAccountMode: Boolean) {

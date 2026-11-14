@@ -40,6 +40,7 @@ jobs:
           echo "build_version_name=$BUILD_VERSION_NAME" >> $GITHUB_OUTPUT
 
       - name: Decode release keystore
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > /tmp/release.jks
           echo "KEYSTORE_FILE=/tmp/release.jks" >> $GITHUB_ENV

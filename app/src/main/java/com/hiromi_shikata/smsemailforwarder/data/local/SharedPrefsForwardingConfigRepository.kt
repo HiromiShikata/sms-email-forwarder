@@ -6,9 +6,15 @@ import com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingConfig
 import com.hiromi_shikata.smsemailforwarder.domain.repository.ForwardingConfigRepository
 
-class SharedPrefsForwardingConfigRepository(context: Context) : ForwardingConfigRepository {
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+class SharedPrefsForwardingConfigRepository internal constructor(
+    private val prefs: SharedPreferences,
+    private val cipher: SmtpPasswordCipher,
+) : ForwardingConfigRepository {
+
+    constructor(context: Context) : this(
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+        KeystoreSmtpPasswordCipher(),
+    )
 
     override fun get(): ForwardingConfig = ForwardingConfig(
         destinationEmail = prefs.getString(KEY_DEST_EMAIL, "") ?: "",
@@ -18,7 +24,7 @@ class SharedPrefsForwardingConfigRepository(context: Context) : ForwardingConfig
         smtpHost = prefs.getString(KEY_SMTP_HOST, "smtp.gmail.com") ?: "smtp.gmail.com",
         smtpPort = prefs.getInt(KEY_SMTP_PORT, 587),
         smtpUsername = prefs.getString(KEY_SMTP_USERNAME, "") ?: "",
-        smtpPassword = prefs.getString(KEY_SMTP_PASSWORD, "") ?: "",
+        smtpPassword = readSmtpPassword(),
     )
 
     override fun save(config: ForwardingConfig) {
@@ -28,8 +34,29 @@ class SharedPrefsForwardingConfigRepository(context: Context) : ForwardingConfig
             .putString(KEY_SMTP_HOST, config.smtpHost)
             .putInt(KEY_SMTP_PORT, config.smtpPort)
             .putString(KEY_SMTP_USERNAME, config.smtpUsername)
-            .putString(KEY_SMTP_PASSWORD, config.smtpPassword)
+            .putString(KEY_SMTP_PASSWORD_ENCRYPTED, cipher.encrypt(config.smtpPassword))
+            .remove(KEY_SMTP_PASSWORD_LEGACY)
             .apply()
+    }
+
+    private fun readSmtpPassword(): String {
+        val encryptedPassword = prefs.getString(KEY_SMTP_PASSWORD_ENCRYPTED, null)
+        if (encryptedPassword != null) {
+            return try {
+                cipher.decrypt(encryptedPassword)
+            } catch (e: Exception) {
+                throw SmtpPasswordUnavailableException("Stored SMTP password cannot be decrypted.", e)
+            }
+        }
+        val legacyPassword = prefs.getString(KEY_SMTP_PASSWORD_LEGACY, null) ?: return ""
+        val committed = prefs.edit()
+            .putString(KEY_SMTP_PASSWORD_ENCRYPTED, cipher.encrypt(legacyPassword))
+            .remove(KEY_SMTP_PASSWORD_LEGACY)
+            .commit()
+        if (!committed) {
+            throw SmtpPasswordUnavailableException("Legacy SMTP password migration could not be committed.", null)
+        }
+        return legacyPassword
     }
 
     companion object {
@@ -39,6 +66,7 @@ class SharedPrefsForwardingConfigRepository(context: Context) : ForwardingConfig
         private const val KEY_SMTP_HOST = "smtp_host"
         private const val KEY_SMTP_PORT = "smtp_port"
         private const val KEY_SMTP_USERNAME = "smtp_username"
-        private const val KEY_SMTP_PASSWORD = "smtp_password"
+        private const val KEY_SMTP_PASSWORD_LEGACY = "smtp_password"
+        private const val KEY_SMTP_PASSWORD_ENCRYPTED = "smtp_password_encrypted"
     }
 }
