@@ -45,10 +45,11 @@ class SharedPrefsForwardingConfigRepository internal constructor(
             return cipher.decrypt(encryptedPassword)
         }
         val legacyPassword = prefs.getString(KEY_SMTP_PASSWORD_LEGACY, null) ?: return ""
-        prefs.edit()
+        val committed = prefs.edit()
             .putString(KEY_SMTP_PASSWORD_ENCRYPTED, cipher.encrypt(legacyPassword))
             .remove(KEY_SMTP_PASSWORD_LEGACY)
             .commit()
+        check(committed) { "Failed to migrate the legacy SMTP password to encrypted storage." }
         return legacyPassword
     }
 
