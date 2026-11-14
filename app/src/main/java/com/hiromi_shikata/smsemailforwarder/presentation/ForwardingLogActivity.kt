@@ -32,6 +32,18 @@ internal fun formatLogAsText(entries: List<ForwardingLogEntry>): String =
         "$date | ${entry.sender} | ${entry.status.name}$errorPart"
     }
 
+internal fun forwardingLogStatusResId(status: ForwardingLogEntryStatus): Int =
+    when (status) {
+        ForwardingLogEntryStatus.FORWARDED -> R.string.status_forwarded
+        ForwardingLogEntryStatus.FAILED -> R.string.status_failed
+        ForwardingLogEntryStatus.SETUP_INCOMPLETE -> R.string.status_setup_incomplete
+        ForwardingLogEntryStatus.RETRYING -> R.string.status_retrying
+    }
+
+internal fun showsForwardingLogErrorMessage(entry: ForwardingLogEntry): Boolean =
+    (entry.status == ForwardingLogEntryStatus.FAILED || entry.status == ForwardingLogEntryStatus.RETRYING) &&
+        entry.errorMessage != null
+
 class ForwardingLogActivity : AppCompatActivity() {
     private lateinit var binding: ActivityForwardingLogBinding
     private lateinit var viewModel: ForwardingLogViewModel
@@ -127,14 +139,8 @@ internal class ForwardingLogAdapter : RecyclerView.Adapter<ForwardingLogAdapter.
             timestampText.text = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
                 .format(Date(entry.timestamp))
             senderText.text = entry.sender
-            statusText.text = when (entry.status) {
-                ForwardingLogEntryStatus.FORWARDED -> itemView.context.getString(R.string.status_forwarded)
-                ForwardingLogEntryStatus.FAILED -> itemView.context.getString(R.string.status_failed)
-                ForwardingLogEntryStatus.SETUP_INCOMPLETE -> itemView.context.getString(R.string.status_setup_incomplete)
-                ForwardingLogEntryStatus.RETRYING -> itemView.context.getString(R.string.status_retrying)
-            }
-            val showsError = entry.status == ForwardingLogEntryStatus.FAILED || entry.status == ForwardingLogEntryStatus.RETRYING
-            if (showsError && entry.errorMessage != null) {
+            statusText.text = itemView.context.getString(forwardingLogStatusResId(entry.status))
+            if (showsForwardingLogErrorMessage(entry)) {
                 errorText.text = entry.errorMessage
                 errorText.visibility = View.VISIBLE
             } else {
