@@ -5,6 +5,8 @@ import com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SharedPrefsForwardingConfigRepositoryTest {
@@ -121,6 +123,42 @@ class SharedPrefsForwardingConfigRepositoryTest {
         assertEquals(config, repository.get())
     }
 
+    @Test
+    fun `get throws SmtpPasswordUnavailableException with the decrypt failure as cause when the stored password cannot be decrypted`() {
+        val failure = IllegalStateException("boom")
+        val cases = listOf(
+            DecryptFailureCase("ASCII ciphertext", "enc:abc"),
+            DecryptFailureCase("non-ASCII ciphertext", "enc:暗号"),
+        )
+        for (case in cases) {
+            val prefs = FakeSharedPreferences()
+            prefs.edit().putString("smtp_password_encrypted", case.storedValue).apply()
+            val repository = SharedPrefsForwardingConfigRepository(prefs, ThrowingDecryptSmtpPasswordCipher(failure))
+
+            val thrown = thrownBy { repository.get() }
+
+            assertTrue("${case.label}: expected SmtpPasswordUnavailableException but was $thrown", thrown is SmtpPasswordUnavailableException)
+            assertSame("${case.label}: cause must be the decrypt failure", failure, thrown.cause)
+        }
+    }
+
+    @Test
+    fun `get throws SmtpPasswordUnavailableException when the legacy password migration commit fails`() {
+        val cases = listOf(
+            MigrationFailureCase("ASCII legacy password", "legacy-secret"),
+            MigrationFailureCase("non-ASCII legacy password", "旧パスワード"),
+        )
+        for (case in cases) {
+            val prefs = FakeSharedPreferences(commitSucceeds = false)
+            prefs.edit().putString("smtp_password", case.legacyPassword).apply()
+            val repository = SharedPrefsForwardingConfigRepository(prefs, FakeSmtpPasswordCipher())
+
+            val thrown = thrownBy { repository.get() }
+
+            assertTrue("${case.label}: expected SmtpPasswordUnavailableException but was $thrown", thrown is SmtpPasswordUnavailableException)
+        }
+    }
+
     private fun configWithPassword(authMode: EmailAuthMode, password: String) = ForwardingConfig(
         destinationEmail = "dest@example.com",
         authMode = authMode,
@@ -135,6 +173,10 @@ private data class RoundTripCase(val label: String, val config: ForwardingConfig
 
 private data class LegacySaveCase(val legacyPassword: String, val newPassword: String)
 
+private data class DecryptFailureCase(val label: String, val storedValue: String)
+
+private data class MigrationFailureCase(val label: String, val legacyPassword: String)
+
 private class FakeSmtpPasswordCipher : SmtpPasswordCipher {
     override fun encrypt(plainText: String): String = PREFIX + plainText.reversed()
 
@@ -148,7 +190,22 @@ private class FakeSmtpPasswordCipher : SmtpPasswordCipher {
     }
 }
 
-private class FakeSharedPreferences : SharedPreferences {
+private class ThrowingDecryptSmtpPasswordCipher(private val failure: IllegalStateException) : SmtpPasswordCipher {
+    override fun encrypt(plainText: String): String = plainText
+
+    override fun decrypt(encryptedText: String): String = throw failure
+}
+
+private fun thrownBy(block: () -> Unit): Throwable {
+    try {
+        block()
+    } catch (thrown: Throwable) {
+        return thrown
+    }
+    throw AssertionError("expected an exception but none was thrown")
+}
+
+private class FakeSharedPreferences(private val commitSucceeds: Boolean = true) : SharedPreferences {
     private val values = LinkedHashMap<String, Any?>()
 
     override fun getAll(): Map<String, *> = LinkedHashMap(values)
@@ -221,6 +278,10 @@ private class FakeSharedPreferences : SharedPreferences {
         }
 
         override fun commit(): Boolean {
+            if (!commitSucceeds) {
+                pending.clear()
+                return false
+            }
             applyPending()
             return true
         }
