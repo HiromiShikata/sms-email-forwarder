@@ -4,7 +4,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
 import androidx.work.Data
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
@@ -17,18 +20,25 @@ import com.hiromi_shikata.smsemailforwarder.data.local.SmtpPasswordUnavailableEx
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingConfig
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingLogEntry
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingLogEntryStatus
+import com.hiromi_shikata.smsemailforwarder.domain.entity.SMS_FORWARD_MAX_ATTEMPTS
+import com.hiromi_shikata.smsemailforwarder.domain.entity.SmsForwardAttemptOutcome
 import com.hiromi_shikata.smsemailforwarder.domain.entity.SmsMessage
+import com.hiromi_shikata.smsemailforwarder.domain.entity.TransientEmailSendException
 import com.hiromi_shikata.smsemailforwarder.domain.repository.ForwardingLogRepository
 import com.hiromi_shikata.smsemailforwarder.domain.repository.SmsForwardingErrorNotifier
 import com.hiromi_shikata.smsemailforwarder.domain.repository.SmsForwardingSetupNotifier
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.SmsForwardUseCase
+import java.util.concurrent.TimeUnit
+
+private const val SMS_FORWARD_RETRY_INITIAL_DELAY_SECONDS = 30L
 
 internal fun forwardWithNotification(
     useCase: SmsForwardUseCase,
     message: SmsMessage,
     notifier: SmsForwardingErrorNotifier,
     logRepository: ForwardingLogRepository,
-) {
+    attemptNumber: Int = 1,
+): SmsForwardAttemptOutcome {
     try {
         useCase.execute(message)
         logRepository.save(
@@ -39,7 +49,19 @@ internal fun forwardWithNotification(
                 errorMessage = null,
             ),
         )
+        return SmsForwardAttemptOutcome.FORWARDED
     } catch (e: Exception) {
+        if (e is TransientEmailSendException && attemptNumber < SMS_FORWARD_MAX_ATTEMPTS) {
+            logRepository.save(
+                ForwardingLogEntry(
+                    timestamp = message.timestamp,
+                    sender = message.sender,
+                    status = ForwardingLogEntryStatus.RETRYING,
+                    errorMessage = e.message,
+                ),
+            )
+            return SmsForwardAttemptOutcome.RETRY_SCHEDULED
+        }
         notifier.notify(message.sender, e.message ?: "Unknown error")
         logRepository.save(
             ForwardingLogEntry(
@@ -49,6 +71,7 @@ internal fun forwardWithNotification(
                 errorMessage = e.message,
             ),
         )
+        return SmsForwardAttemptOutcome.FAILED
     }
 }
 
@@ -88,6 +111,8 @@ internal fun buildSmsForwardWorkRequest(
         .build()
     return OneTimeWorkRequestBuilder<SmsForwardWorker>()
         .setInputData(data)
+        .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, SMS_FORWARD_RETRY_INITIAL_DELAY_SECONDS, TimeUnit.SECONDS)
         .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
         .build()
 }

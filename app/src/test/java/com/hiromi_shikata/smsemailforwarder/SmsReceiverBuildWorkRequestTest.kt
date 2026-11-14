@@ -1,5 +1,7 @@
 package com.hiromi_shikata.smsemailforwarder
 
+import androidx.work.BackoffPolicy
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import org.junit.Assert.assertEquals
@@ -36,5 +38,23 @@ class SmsReceiverBuildWorkRequestTest {
     fun `buildSmsForwardWorkRequest sets timestamp in input data`() {
         val request = buildSmsForwardWorkRequest("sender", "body", 5000L)
         assertEquals(5000L, request.workSpec.input.getLong(SmsForwardWorker.KEY_TIMESTAMP, -1L))
+    }
+
+    @Test
+    fun `buildSmsForwardWorkRequest requires a connected network`() {
+        val request = buildSmsForwardWorkRequest("sender", "body", 1000L)
+        assertEquals(NetworkType.CONNECTED, request.workSpec.constraints.requiredNetworkType)
+    }
+
+    @Test
+    fun `buildSmsForwardWorkRequest uses exponential backoff`() {
+        val request = buildSmsForwardWorkRequest("sender", "body", 1000L)
+        assertEquals(BackoffPolicy.EXPONENTIAL, request.workSpec.backoffPolicy)
+    }
+
+    @Test
+    fun `buildSmsForwardWorkRequest sets 30 second initial backoff delay`() {
+        val request = buildSmsForwardWorkRequest("sender", "body", 1000L)
+        assertEquals(30_000L, request.workSpec.backoffDelayDuration)
     }
 }

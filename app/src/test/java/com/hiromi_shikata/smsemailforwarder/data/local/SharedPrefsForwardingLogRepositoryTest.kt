@@ -103,6 +103,40 @@ class SharedPrefsForwardingLogRepositoryTest {
         val result = deserializeEntries(capturedJson.last())
         assertNull(result[0].errorMessage)
     }
+
+    @Test
+    fun `save replaces entry with same timestamp and sender instead of appending`() {
+        val written = mutableListOf<String>()
+        whenever(editor.putString(any(), any())).thenAnswer { invocation ->
+            written.add(invocation.getArgument(1))
+            editor
+        }
+        val retrying = ForwardingLogEntry(1000L, "+1234567890", ForwardingLogEntryStatus.RETRYING, "connect failed")
+        val forwarded = ForwardingLogEntry(1000L, "+1234567890", ForwardingLogEntryStatus.FORWARDED, null)
+
+        repository.save(retrying)
+        whenever(prefs.getString(any(), any())).thenReturn(written.last())
+        repository.save(forwarded)
+
+        assertEquals(listOf(forwarded), deserializeEntries(written.last()))
+    }
+
+    @Test
+    fun `save keeps entries with same timestamp but different sender`() {
+        val written = mutableListOf<String>()
+        whenever(editor.putString(any(), any())).thenAnswer { invocation ->
+            written.add(invocation.getArgument(1))
+            editor
+        }
+        val first = ForwardingLogEntry(1000L, "+1111111111", ForwardingLogEntryStatus.FORWARDED, null)
+        val second = ForwardingLogEntry(1000L, "+2222222222", ForwardingLogEntryStatus.RETRYING, "connect failed")
+
+        repository.save(first)
+        whenever(prefs.getString(any(), any())).thenReturn(written.last())
+        repository.save(second)
+
+        assertEquals(listOf(first, second), deserializeEntries(written.last()))
+    }
 }
 
 class SerializationTest {

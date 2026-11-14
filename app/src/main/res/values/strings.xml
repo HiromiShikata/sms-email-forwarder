@@ -66,4 +66,5 @@
     <string name="status_forwarded">Forwarded</string>
     <string name="status_failed">Failed</string>
     <string name="status_setup_incomplete">Setup Incomplete</string>
+    <string name="status_retrying">Retrying</string>
 </resources>
