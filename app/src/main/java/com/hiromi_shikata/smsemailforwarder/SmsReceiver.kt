@@ -101,17 +101,7 @@ class SmsReceiver : BroadcastReceiver() {
             SharedPrefsForwardingConfigRepository(context).get()
         } catch (e: SmtpPasswordUnavailableException) {
             val errorNotifier = AndroidSmsForwardingErrorNotifier(context)
-            messages.map { it.originatingAddress ?: "Unknown" }.distinct().forEach { sender ->
-                errorNotifier.notify(sender, e.message ?: "Unknown error")
-                logRepository.save(
-                    ForwardingLogEntry(
-                        timestamp = System.currentTimeMillis(),
-                        sender = sender,
-                        status = ForwardingLogEntryStatus.FAILED,
-                        errorMessage = e.message,
-                    ),
-                )
-            }
+            reportSmtpPasswordUnavailable(senders = messages.map { it.originatingAddress ?: "Unknown" }, errorMessage = e.message ?: "Unknown error", timestamp = System.currentTimeMillis(), notifyError = { sender, message -> errorNotifier.notify(sender, message) }, saveLog = { entry -> logRepository.save(entry) })
             return
         }
         val setupNotifier = AndroidSmsForwardingSetupNotifier(context)
