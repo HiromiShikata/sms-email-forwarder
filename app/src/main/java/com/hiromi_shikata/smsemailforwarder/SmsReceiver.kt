@@ -9,9 +9,11 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
+import com.hiromi_shikata.smsemailforwarder.data.local.AndroidSmsForwardingErrorNotifier
 import com.hiromi_shikata.smsemailforwarder.data.local.AndroidSmsForwardingSetupNotifier
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingConfigRepository
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingLogRepository
+import com.hiromi_shikata.smsemailforwarder.data.local.SmtpPasswordUnavailableException
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingConfig
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingLogEntry
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingLogEntryStatus
@@ -94,9 +96,25 @@ class SmsReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
         val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
-        val config = SharedPrefsForwardingConfigRepository(context).get()
-        val setupNotifier = AndroidSmsForwardingSetupNotifier(context)
         val logRepository = SharedPrefsForwardingLogRepository.create(context)
+        val config = try {
+            SharedPrefsForwardingConfigRepository(context).get()
+        } catch (e: SmtpPasswordUnavailableException) {
+            val errorNotifier = AndroidSmsForwardingErrorNotifier(context)
+            messages.map { it.originatingAddress ?: "Unknown" }.distinct().forEach { sender ->
+                errorNotifier.notify(sender, e.message ?: "Unknown error")
+                logRepository.save(
+                    ForwardingLogEntry(
+                        timestamp = System.currentTimeMillis(),
+                        sender = sender,
+                        status = ForwardingLogEntryStatus.FAILED,
+                        errorMessage = e.message,
+                    ),
+                )
+            }
+            return
+        }
+        val setupNotifier = AndroidSmsForwardingSetupNotifier(context)
         val workManager = WorkManager.getInstance(context)
         messages.groupBy { it.originatingAddress }.forEach { (sender, parts) ->
             val body = parts.joinToString("") { it.messageBody }

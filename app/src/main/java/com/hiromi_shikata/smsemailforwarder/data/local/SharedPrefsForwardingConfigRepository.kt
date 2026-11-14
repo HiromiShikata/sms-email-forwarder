@@ -42,14 +42,20 @@ class SharedPrefsForwardingConfigRepository internal constructor(
     private fun readSmtpPassword(): String {
         val encryptedPassword = prefs.getString(KEY_SMTP_PASSWORD_ENCRYPTED, null)
         if (encryptedPassword != null) {
-            return cipher.decrypt(encryptedPassword)
+            return try {
+                cipher.decrypt(encryptedPassword)
+            } catch (e: Exception) {
+                throw SmtpPasswordUnavailableException("Stored SMTP password cannot be decrypted.", e)
+            }
         }
         val legacyPassword = prefs.getString(KEY_SMTP_PASSWORD_LEGACY, null) ?: return ""
         val committed = prefs.edit()
             .putString(KEY_SMTP_PASSWORD_ENCRYPTED, cipher.encrypt(legacyPassword))
             .remove(KEY_SMTP_PASSWORD_LEGACY)
             .commit()
-        check(committed) { "Failed to migrate the legacy SMTP password to encrypted storage." }
+        if (!committed) {
+            throw SmtpPasswordUnavailableException("Legacy SMTP password migration could not be committed.", null)
+        }
         return legacyPassword
     }
 

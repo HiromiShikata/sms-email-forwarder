@@ -37,6 +37,7 @@
     <string name="forwarding_active_google">Forwarding SMS via Gmail: %s → %s</string>
     <string name="downloading">Downloading update…</string>
     <string name="download_failed">Download failed. Please check your connection and try again.</string>
+    <string name="smtp_password_unavailable">The saved SMTP password could not be read. Please enter it again in Settings.</string>
     <string name="forwarding_error_title">SMS Forwarding Failed</string>
     <string name="forwarding_error_body">Could not forward SMS from %1$s: %2$s</string>
     <string name="forwarding_error_channel_name">Forwarding Errors</string>

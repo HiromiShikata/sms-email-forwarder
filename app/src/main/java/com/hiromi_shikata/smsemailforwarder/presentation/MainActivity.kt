@@ -22,6 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import com.hiromi_shikata.smsemailforwarder.BuildConfig
 import com.hiromi_shikata.smsemailforwarder.R
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingConfigRepository
+import com.hiromi_shikata.smsemailforwarder.data.local.SmtpPasswordUnavailableException
 import com.hiromi_shikata.smsemailforwarder.data.remote.CacheApkDownloadRepository
 import com.hiromi_shikata.smsemailforwarder.data.remote.GithubAppUpdateRepository
 import com.hiromi_shikata.smsemailforwarder.databinding.ActivityMainBinding
@@ -142,13 +143,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         requestRequiredPermissions()
-        viewModel.loadConfig()
+        loadConfigOrShowError()
         viewModel.checkForUpdate()
     }
 
     override fun onResume() {
         super.onResume()
-        viewModel.loadConfig()
+        loadConfigOrShowError()
         val smsGranted = ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.RECEIVE_SMS,
@@ -159,6 +160,14 @@ class MainActivity : AppCompatActivity() {
             resolveBatteryOptimizationButtonVisibility(
                 powerManager.isIgnoringBatteryOptimizations(packageName),
             )
+    }
+
+    private fun loadConfigOrShowError() {
+        try {
+            viewModel.loadConfig()
+        } catch (e: SmtpPasswordUnavailableException) {
+            Toast.makeText(this, getString(R.string.smtp_password_unavailable), Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun downloadAndInstall(downloadUrl: String, version: String) {
