@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.pm.ServiceInfo
 import android.os.Build
 import androidx.work.ForegroundInfo
-import androidx.work.ListenableWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.hiromi_shikata.smsemailforwarder.data.local.AndroidSmsForwardingErrorNotifier
@@ -12,7 +11,6 @@ import com.hiromi_shikata.smsemailforwarder.data.local.AndroidSmsForwardingInPro
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingConfigRepository
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingLogRepository
 import com.hiromi_shikata.smsemailforwarder.data.remote.SmtpEmailSendRepository
-import com.hiromi_shikata.smsemailforwarder.domain.entity.SmsForwardAttemptOutcome
 import com.hiromi_shikata.smsemailforwarder.domain.entity.SmsMessage
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.SmsForwardUseCase
 
@@ -21,12 +19,6 @@ internal fun getForegroundServiceTypeForSdk(sdkInt: Int): Int? =
         ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
     } else {
         null
-    }
-
-internal fun toWorkerResult(outcome: SmsForwardAttemptOutcome): ListenableWorker.Result =
-    when (outcome) {
-        SmsForwardAttemptOutcome.RETRY_SCHEDULED -> ListenableWorker.Result.retry()
-        SmsForwardAttemptOutcome.FORWARDED, SmsForwardAttemptOutcome.FAILED -> ListenableWorker.Result.success()
     }
 
 class SmsForwardWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
@@ -55,14 +47,13 @@ class SmsForwardWorker(context: Context, params: WorkerParameters) : Worker(cont
         val emailSendRepository = SmtpEmailSendRepository()
         val notifier = AndroidSmsForwardingErrorNotifier(applicationContext)
         val logRepository = SharedPrefsForwardingLogRepository.create(applicationContext)
-        val outcome = forwardWithNotification(
+        forwardWithNotification(
             SmsForwardUseCase(configRepository, emailSendRepository),
             SmsMessage(sender = sender, body = body, timestamp = timestamp),
             notifier,
             logRepository,
-            attemptNumber = runAttemptCount + 1,
         )
-        return toWorkerResult(outcome)
+        return Result.success()
     }
 
     companion object {

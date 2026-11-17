@@ -4,7 +4,6 @@ enum class ForwardingLogEntryStatus {
     FORWARDED,
     FAILED,
     SETUP_INCOMPLETE,
-    RETRYING,
 }
 
 data class ForwardingLogEntry(

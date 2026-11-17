@@ -44,21 +44,13 @@ internal fun enforceMaxEntries(
 
 private const val MAX_ENTRIES = 50
 
-private fun isSameSms(a: ForwardingLogEntry, b: ForwardingLogEntry): Boolean =
-    a.timestamp == b.timestamp && a.sender == b.sender
-
 class SharedPrefsForwardingLogRepository(
     private val prefs: SharedPreferences,
 ) : ForwardingLogRepository {
 
     override fun save(entry: ForwardingLogEntry) {
-        val entries = getAll()
-        val merged = if (entries.any { isSameSms(it, entry) }) {
-            entries.map { if (isSameSms(it, entry)) entry else it }
-        } else {
-            entries + entry
-        }
-        prefs.edit().putString(KEY_LOG, serializeEntries(enforceMaxEntries(merged))).apply()
+        val updated = enforceMaxEntries(getAll() + entry)
+        prefs.edit().putString(KEY_LOG, serializeEntries(updated)).apply()
     }
 
     override fun getAll(): List<ForwardingLogEntry> {
