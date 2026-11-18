@@ -68,4 +68,39 @@ class SmtpSessionPropertiesTest {
             )
         }
     }
+
+    @Test
+    fun `buildSmtpSessionProperties sets 30 second timeouts for every config`() {
+        val timeoutKeys = listOf(
+            "mail.smtp.connectiontimeout",
+            "mail.smtp.timeout",
+            "mail.smtp.writetimeout",
+        )
+        val cases = listOf(
+            ForwardingConfig(
+                destinationEmail = "dest@example.com",
+                authMode = EmailAuthMode.SMTP,
+                smtpHost = "smtp.example.com",
+                smtpPort = 587,
+                smtpUsername = "user@example.com",
+                smtpPassword = "test-password",
+            ),
+            ForwardingConfig(
+                destinationEmail = "dest@example.com",
+                authMode = EmailAuthMode.SMTP,
+                smtpHost = "mail.another-example.org",
+                smtpPort = 465,
+                smtpUsername = "user@another-example.org",
+                smtpPassword = "test-password",
+            ),
+        )
+
+        cases.forEach { config ->
+            val props = buildSmtpSessionProperties(config)
+
+            timeoutKeys.forEach { key ->
+                assertEquals("$key for host ${config.smtpHost}", "30000", props.getProperty(key))
+            }
+        }
+    }
 }

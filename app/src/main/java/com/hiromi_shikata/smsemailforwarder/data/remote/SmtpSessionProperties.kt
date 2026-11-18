@@ -11,4 +11,9 @@ internal fun buildSmtpSessionProperties(config: ForwardingConfig): Properties =
         put("mail.smtp.starttls.enable", "true")
         put("mail.smtp.starttls.required", "true")
         put("mail.smtp.ssl.checkserveridentity", "true")
+        put("mail.smtp.connectiontimeout", SMTP_TIMEOUT_MILLIS.toString())
+        put("mail.smtp.timeout", SMTP_TIMEOUT_MILLIS.toString())
+        put("mail.smtp.writetimeout", SMTP_TIMEOUT_MILLIS.toString())
     }
+
+private const val SMTP_TIMEOUT_MILLIS = 30_000
