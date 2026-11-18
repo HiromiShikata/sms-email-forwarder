@@ -23,6 +23,10 @@ class SmtpEmailSendRepository : EmailSendRepository {
             subject = "SMS from ${message.sender}"
             setText("From: ${message.sender}\n\n${message.body}")
         }
-        Transport.send(mimeMessage)
+        try {
+            Transport.send(mimeMessage)
+        } catch (error: Exception) {
+            throw classifySmtpSendFailure(error)
+        }
     }
 }
