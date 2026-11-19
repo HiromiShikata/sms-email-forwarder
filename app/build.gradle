@@ -14,9 +14,15 @@ android {
         versionCode project.hasProperty("buildVersionCode") ? project.property("buildVersionCode").toString().toInteger() : 1
         versionName System.getenv("BUILD_VERSION_NAME") ?: "0.1.0"
 
-        buildConfigField "String", "GITHUB_REPO", '"HiromiShikata/sms-email-forwarder"'
+        buildConfigField "String", "UPDATE_RELEASES_BASE_URL", "\"${System.getenv('UPDATE_RELEASES_BASE_URL') ?: 'https://github.com/HiromiShikata/sms-email-forwarder/releases'}\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
     }
 
     buildFeatures {
@@ -80,6 +86,10 @@ dependencies {
     implementation 'androidx.work:work-runtime-ktx:2.12.0'
 
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.16.1'
+    testImplementation 'androidx.test:core:1.7.0'
+    testImplementation 'androidx.work:work-testing:2.12.0'
+    testImplementation 'androidx.room:room-runtime:2.7.2'
     testImplementation 'org.mockito:mockito-core:5.24.0'
     testImplementation 'org.mockito.kotlin:mockito-kotlin:6.4.0'
     testImplementation 'androidx.arch.core:core-testing:2.2.0'

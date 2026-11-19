@@ -8,28 +8,33 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
 import com.hiromi_shikata.smsemailforwarder.R
-import com.hiromi_shikata.smsemailforwarder.domain.entity.AppUpdate
+import com.hiromi_shikata.smsemailforwarder.domain.buildUpdateNotificationText
+import com.hiromi_shikata.smsemailforwarder.domain.entity.AppRelease
 import com.hiromi_shikata.smsemailforwarder.domain.repository.AppUpdateNotifier
 
-class AndroidAppUpdateNotifier(private val context: Context) : AppUpdateNotifier {
+class AndroidAppUpdateNotifier(
+    private val context: Context,
+    private val tapIntent: Intent,
+) : AppUpdateNotifier {
 
-    override fun notify(update: AppUpdate) {
+    override fun notifyReadyToInstall(releases: List<AppRelease>) {
         val nm = context.getSystemService<NotificationManager>() ?: return
-        val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-            ?.apply { addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP) }
-            ?: return
+        val newest = releases.firstOrNull() ?: return
         val pendingIntent = PendingIntent.getActivity(
             context,
             0,
-            launchIntent,
+            tapIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        val notes = buildUpdateNotificationText(releases)
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
             .setContentTitle(context.getString(R.string.app_update_notification_title))
-            .setContentText(context.getString(R.string.app_update_notification_body, update.latestVersion))
+            .setContentText(context.getString(R.string.app_update_notification_body, newest.version))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(notes))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
             .setAutoCancel(false)
             .setContentIntent(pendingIntent)
             .build()

@@ -1,59 +1,93 @@
 package com.hiromi_shikata.smsemailforwarder
 
-import androidx.work.ListenableWorker.Result
-import com.hiromi_shikata.smsemailforwarder.domain.entity.AppUpdate
+import android.app.Application
+import androidx.work.ListenableWorker
+import androidx.work.WorkerFactory
+import androidx.work.testing.TestListenableWorkerBuilder
+import com.hiromi_shikata.smsemailforwarder.domain.entity.AppRelease
+import com.hiromi_shikata.smsemailforwarder.domain.entity.AppUpdateStatus
+import com.hiromi_shikata.smsemailforwarder.domain.repository.ApkDownloadRepository
 import com.hiromi_shikata.smsemailforwarder.domain.repository.AppUpdateNotifier
+import com.hiromi_shikata.smsemailforwarder.domain.repository.AppUpdateRepository
+import com.hiromi_shikata.smsemailforwarder.domain.repository.AppUpdateStatusRepository
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.AppUpdateCheckUseCase
+import androidx.test.core.app.ApplicationProvider
+import androidx.work.ListenableWorker.Result
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import java.io.File
+import java.io.IOException
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35], application = Application::class)
 class AppUpdateCheckWorkerTest {
-    private val useCase: AppUpdateCheckUseCase = mock()
-    private val notifier: AppUpdateNotifier = mock()
-    private val currentVersion = "1.0.0"
+    private val app: Application = ApplicationProvider.getApplicationContext()
 
-    @Test
-    fun `checkUpdateAndNotify calls notify when update is available`() {
-        val update = AppUpdate(
-            latestVersion = "1.1.0",
-            downloadUrl = "https://example.com/app.apk",
-            isUpdateAvailable = true,
-        )
-        whenever(useCase.execute(currentVersion)).thenReturn(update)
+    private class MemoryStatus : AppUpdateStatusRepository {
+        var stored: AppUpdateStatus? = null
+        override fun load(): AppUpdateStatus? = stored
+        override fun save(status: AppUpdateStatus) {
+            stored = status
+        }
+    }
 
-        val result = checkUpdateAndNotify(useCase, notifier, currentVersion)
+    private object NoopNotifier : AppUpdateNotifier {
+        override fun notifyReadyToInstall(releases: List<AppRelease>) = Unit
+        override fun cancel() = Unit
+    }
 
-        verify(notifier).notify(update)
-        verify(notifier, never()).cancel()
-        assertEquals(Result.success(), result)
+    private fun useCase(releases: () -> List<AppRelease>, store: MemoryStatus) = AppUpdateCheckUseCase(
+        releaseRepository = object : AppUpdateRepository {
+            override fun fetchReleases(): List<AppRelease> = releases()
+        },
+        apkDownloadRepository = object : ApkDownloadRepository {
+            override fun download(url: String): File = File.createTempFile("update", ".apk")
+        },
+        notifier = NoopNotifier,
+        statusRepository = store,
+        installedVersion = "0.1.344",
+        nowEpochMillis = { 1L },
+    )
+
+    private fun runWorker(useCase: AppUpdateCheckUseCase): ListenableWorker.Result {
+        val factory = object : WorkerFactory() {
+            override fun createWorker(
+                appContext: android.content.Context,
+                workerClassName: String,
+                workerParameters: androidx.work.WorkerParameters,
+            ): ListenableWorker? =
+                if (workerClassName == AppUpdateCheckWorker::class.java.name) {
+                    AppUpdateCheckWorker(appContext, workerParameters) { useCase }
+                } else {
+                    null
+                }
+        }
+        val worker = TestListenableWorkerBuilder<AppUpdateCheckWorker>(app)
+            .setWorkerFactory(factory)
+            .build()
+        return worker.startWork().get()
     }
 
     @Test
-    fun `checkUpdateAndNotify calls cancel when no update is available`() {
-        val update = AppUpdate(
-            latestVersion = "1.0.0",
-            downloadUrl = "https://example.com/app.apk",
-            isUpdateAvailable = false,
-        )
-        whenever(useCase.execute(currentVersion)).thenReturn(update)
-
-        val result = checkUpdateAndNotify(useCase, notifier, currentVersion)
-
-        verify(notifier).cancel()
-        verify(notifier, never()).notify(update)
-        assertEquals(Result.success(), result)
+    fun `a successful check returns success and persists the resulting status`() {
+        val store = MemoryStatus()
+        val result = runWorker(useCase(releases = { emptyList() }, store = store))
+        assertTrue(result is Result.Success)
+        assertEquals(AppUpdateStatus.UpToDate("0.1.344", 1L), store.stored)
     }
 
     @Test
-    fun `checkUpdateAndNotify returns retry when repository throws`() {
-        whenever(useCase.execute(currentVersion)).thenThrow(RuntimeException("Network error"))
-
-        val result = checkUpdateAndNotify(useCase, notifier, currentVersion)
-
-        assertEquals(Result.retry(), result)
+    fun `a failed check returns failure and persists the failure status with its message`() {
+        val store = MemoryStatus()
+        val result = runWorker(useCase(releases = { throw IOException("HTTP 503 while reading manifest") }, store = store))
+        assertTrue(result is Result.Failure)
+        assertEquals(
+            AppUpdateStatus.CheckFailed("0.1.344", "HTTP 503 while reading manifest", 1L),
+            store.stored,
+        )
     }
 }

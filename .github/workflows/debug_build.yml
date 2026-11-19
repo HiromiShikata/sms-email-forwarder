@@ -8,6 +8,10 @@ on:
     branches:
       - '**'
 
+concurrency:
+  group: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'release-main' || format('non-release-{0}', github.run_id) }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -91,15 +95,37 @@ jobs:
             fi
           done
 
-          RELEASE_NOTES="Automated build of main at ${GITHUB_SHA:0:7} (version ${{ env.BUILD_VERSION_NAME }}, build ${{ github.run_number }}). Install sms-email-forwarder_arm64-v8a.apk for most modern Android devices, or sms-email-forwarder_universal.apk for any ABI."
+          RELEASES_JSON="$RUNNER_TEMP/releases.json"
+          MANIFEST="$RUNNER_TEMP/release-notes.json"
+          gh api --paginate "repos/${{ github.repository }}/releases?per_page=100" > "$RELEASES_JSON" || exit_on_error "Failed to list releases."
+          CONTEXT=$(scripts/release-publish-context.sh "$RELEASES_JSON" "$RELEASE_TAG") || exit_on_error "Failed to read release context for '$RELEASE_TAG'."
+          PREV_TAG=$(printf '%s\n' "$CONTEXT" | sed -n 's/^PREVIOUS_TAG=//p')
+          IS_NEWEST=$(printf '%s\n' "$CONTEXT" | sed -n 's/^IS_NEWEST=//p')
+
+          if [ -n "$PREV_TAG" ]; then
+            CHANGES=$(gh api "repos/${{ github.repository }}/compare/${PREV_TAG}...${GITHUB_SHA}" --jq '.commits[] | "- " + (.commit.message | split("\n")[0])') || exit_on_error "Failed to list changes from ${PREV_TAG} to ${GITHUB_SHA}."
+            HEADER="Changes since ${PREV_TAG}:"
+          else
+            CHANGES=$(git log -1 --format='- %s' "$GITHUB_SHA")
+            HEADER="Changes in the first release:"
+          fi
+          if [ -z "$CHANGES" ]; then
+            CHANGES="- No commits since ${PREV_TAG:-the first release}."
+          fi
+          RELEASE_NOTES="$(printf '%s\n\n%s\n\n%s' "$HEADER" "$CHANGES" "Install sms-email-forwarder_arm64-v8a.apk for most modern Android devices, or sms-email-forwarder_universal.apk for any ABI.")"
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             if ! gh release upload "$RELEASE_TAG" "$STABLE_DIR"/* --clobber; then
               exit_on_error "Failed to upload assets to existing release '$RELEASE_TAG'."
             fi
-            gh release edit "$RELEASE_TAG" --title "${{ env.BUILD_VERSION_NAME }}" --notes "$RELEASE_NOTES" --latest || true
+            gh release edit "$RELEASE_TAG" --title "${{ env.BUILD_VERSION_NAME }}" --notes "$RELEASE_NOTES" || exit_on_error "Failed to update notes of release '$RELEASE_TAG'."
           else
-            if ! gh release create "$RELEASE_TAG" "$STABLE_DIR"/* --target "$GITHUB_SHA" --title "${{ env.BUILD_VERSION_NAME }}" --notes "$RELEASE_NOTES" --latest; then
-              exit_on_error "Failed to create release '$RELEASE_TAG'."
+            if ! gh release create "$RELEASE_TAG" "$STABLE_DIR"/* --draft --target "$GITHUB_SHA" --title "${{ env.BUILD_VERSION_NAME }}" --notes "$RELEASE_NOTES"; then
+              exit_on_error "Failed to create draft release '$RELEASE_TAG'."
             fi
           fi
+
+          gh api --paginate "repos/${{ github.repository }}/releases?per_page=100" > "$RELEASES_JSON" || exit_on_error "Failed to list releases."
+          scripts/build-release-notes-manifest.sh "$RELEASES_JSON" "$RELEASE_TAG" > "$MANIFEST" || exit_on_error "Failed to build release-notes.json for '$RELEASE_TAG'."
+          gh release upload "$RELEASE_TAG" "$MANIFEST" --clobber || exit_on_error "Failed to upload release-notes.json to '$RELEASE_TAG'."
+          gh release edit "$RELEASE_TAG" --draft=false --latest="$IS_NEWEST" || exit_on_error "Failed to publish release '$RELEASE_TAG'."
