@@ -1,6 +1,7 @@
 package com.hiromi_shikata.smsemailforwarder.data.remote
 
 import android.content.Context
+import android.util.Log
 import com.hiromi_shikata.smsemailforwarder.domain.repository.ApkDownloadRepository
 import java.io.File
 import java.io.IOException
@@ -22,6 +23,11 @@ class CacheApkDownloadRepository(
         if (!partFile.renameTo(file)) {
             throw IOException("Failed to move the downloaded update to ${file.name}")
         }
+        staleCachedFiles(context.cacheDir, file).forEach { stale ->
+            if (!stale.delete()) {
+                Log.w(TAG, "Failed to delete stale update file ${stale.name}")
+            }
+        }
         return file
     }
 
@@ -30,4 +36,16 @@ class CacheApkDownloadRepository(
             .digest(url.toByteArray(Charsets.UTF_8))
             .take(8)
             .joinToString("") { "%02x".format(it) }
+
+    private companion object {
+        const val TAG = "CacheApkDownload"
+    }
 }
+
+internal fun staleCachedFiles(cacheDir: File, keep: File): List<File> =
+    cacheDir.listFiles().orEmpty().filter { candidate ->
+        candidate.isFile &&
+            candidate != keep &&
+            candidate.name.startsWith("update-") &&
+            (candidate.name.endsWith(".apk") || candidate.name.endsWith(".apk.part"))
+    }

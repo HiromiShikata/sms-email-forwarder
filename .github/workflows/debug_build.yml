@@ -94,7 +94,9 @@ jobs:
           done
 
           PREV_TAG="$(gh release list --exclude-drafts --limit 5 --json tagName --jq '.[].tagName' | grep -vxF "$RELEASE_TAG" | head -n 1 || true)"
-          RELEASE_NOTES_CHANGES="$(bash scripts/generate-release-notes.sh "$PREV_TAG" "$GITHUB_SHA")"
+          if ! RELEASE_NOTES_CHANGES="$(bash scripts/generate-release-notes.sh "$PREV_TAG" "$GITHUB_SHA")"; then
+            exit_on_error "Failed to generate release notes."
+          fi
           if [ -z "$RELEASE_NOTES_CHANGES" ]; then
             RELEASE_NOTES_CHANGES="No changes since the previous release."
           fi
