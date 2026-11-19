@@ -124,7 +124,7 @@ class AppUpdateCheckUseCaseTest {
     }
 
     @Test
-    fun `an already downloaded update for the same version is kept without downloading again`() {
+    fun `an already downloaded update for the same version is kept without downloading again and notified again`() {
         val apk = File.createTempFile("update", ".apk")
         val store = FakeStatusStore(events)
         store.stored = AppUpdateStatus.ReadyToInstall("0.1.344", newer, apk.absolutePath, 1_000L)
@@ -132,7 +132,7 @@ class AppUpdateCheckUseCaseTest {
         val status = useCase(store = store, notifier = notifier).execute()
         assertEquals(AppUpdateStatus.ReadyToInstall("0.1.344", newer, apk.absolutePath, 9_000L), status)
         assertTrue(events.none { it.startsWith("download") })
-        assertTrue(notifier.notified.isEmpty())
+        assertEquals(listOf(newer), notifier.notified)
     }
 
     @Test

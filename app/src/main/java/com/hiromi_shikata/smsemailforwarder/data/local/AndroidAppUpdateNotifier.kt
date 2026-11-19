@@ -34,6 +34,7 @@ class AndroidAppUpdateNotifier(
             .setStyle(NotificationCompat.BigTextStyle().bigText(notes))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
             .setAutoCancel(false)
             .setContentIntent(pendingIntent)
             .build()

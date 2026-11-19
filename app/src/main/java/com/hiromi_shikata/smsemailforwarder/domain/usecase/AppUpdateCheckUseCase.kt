@@ -54,7 +54,9 @@ class AppUpdateCheckUseCase(
             previous.releases.first().version == latest.version &&
             File(previous.apkFilePath).exists()
         ) {
-            return persist(previous.copy(releases = newer, checkedAtEpochMillis = checkedAt, lastCheckFailure = null))
+            val ready = persist(previous.copy(releases = newer, checkedAtEpochMillis = checkedAt, lastCheckFailure = null))
+            notifier.notifyReadyToInstall(newer)
+            return ready
         }
         persist(AppUpdateStatus.Available(installedVersion, newer, checkedAt))
         persist(AppUpdateStatus.Downloading(installedVersion, newer, checkedAt))

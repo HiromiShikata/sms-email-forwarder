@@ -24,22 +24,30 @@ import java.util.concurrent.TimeUnit
 const val APP_UPDATE_PERIODIC_WORK_NAME = "app_update_check"
 const val APP_UPDATE_IMMEDIATE_WORK_NAME = "app_update_check_now"
 
-class AppUpdateCheckWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
+class AppUpdateCheckWorker(
+    context: Context,
+    params: WorkerParameters,
+    private val useCaseFactory: (Context) -> AppUpdateCheckUseCase,
+) : Worker(context, params) {
+    constructor(context: Context, params: WorkerParameters) : this(context, params, ::createAppUpdateCheckUseCase)
+
     override fun doWork(): Result {
-        val status = AppUpdateCheckUseCase(
-            releaseRepository = ReleaseManifestAppUpdateRepository(BuildConfig.UPDATE_RELEASES_BASE_URL),
-            apkDownloadRepository = CacheApkDownloadRepository(applicationContext),
-            notifier = AndroidAppUpdateNotifier(
-                applicationContext,
-                Intent(applicationContext, AppUpdateInstallActivity::class.java),
-            ),
-            statusRepository = SharedPrefsAppUpdateStatusRepository(applicationContext),
-            installedVersion = BuildConfig.VERSION_NAME,
-            nowEpochMillis = { System.currentTimeMillis() },
-        ).execute()
+        val status = useCaseFactory(applicationContext).execute()
         return if (status is AppUpdateStatus.CheckFailed) Result.failure() else Result.success()
     }
 }
+
+fun createAppUpdateCheckUseCase(context: Context): AppUpdateCheckUseCase = AppUpdateCheckUseCase(
+    releaseRepository = ReleaseManifestAppUpdateRepository(BuildConfig.UPDATE_RELEASES_BASE_URL),
+    apkDownloadRepository = CacheApkDownloadRepository(context),
+    notifier = AndroidAppUpdateNotifier(
+        context,
+        Intent(context, AppUpdateInstallActivity::class.java),
+    ),
+    statusRepository = SharedPrefsAppUpdateStatusRepository(context),
+    installedVersion = BuildConfig.VERSION_NAME,
+    nowEpochMillis = { System.currentTimeMillis() },
+)
 
 private fun networkConnectedConstraints(): Constraints =
     Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
