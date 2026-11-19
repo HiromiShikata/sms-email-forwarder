@@ -9,7 +9,16 @@ private const val CACHE_TAG = "CacheApkDownload"
 internal fun cachedApkFile(cacheDir: File, digest: String): File =
     File(cacheDir, "update-$digest.apk")
 
-internal fun cacheApk(cacheDir: File, digest: String, expectedLength: Long, open: () -> InputStream): File {
+internal fun cacheApk(cacheDir: File, digest: String, expectedLength: Long, open: () -> InputStream): File =
+    cacheApk(cacheDir, digest, expectedLength, open, { from, to -> from.renameTo(to) })
+
+internal fun cacheApk(
+    cacheDir: File,
+    digest: String,
+    expectedLength: Long,
+    open: () -> InputStream,
+    rename: (File, File) -> Boolean = { from, to -> from.renameTo(to) },
+): File {
     val target = cachedApkFile(cacheDir, digest)
     if (target.exists()) return target
 
@@ -17,7 +26,7 @@ internal fun cacheApk(cacheDir: File, digest: String, expectedLength: Long, open
     var moved = false
     try {
         writeVerifiedApk(partFile, expectedLength, open)
-        if (!partFile.renameTo(target)) {
+        if (!rename(partFile, target)) {
             throw IOException("Failed to move the downloaded update to ${target.name}")
         }
         moved = true
