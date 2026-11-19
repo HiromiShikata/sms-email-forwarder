@@ -1,6 +1,7 @@
 package com.hiromi_shikata.smsemailforwarder.data.local
 
 import com.hiromi_shikata.smsemailforwarder.domain.entity.AppRelease
+import com.hiromi_shikata.smsemailforwarder.domain.entity.CheckFailure
 import com.hiromi_shikata.smsemailforwarder.domain.entity.AppUpdateStatus
 import org.json.JSONArray
 import org.json.JSONObject
@@ -17,6 +18,7 @@ object AppUpdateStatusJson {
             is AppUpdateStatus.ReadyToInstall -> json.put("type", "READY_TO_INSTALL")
                 .put("releases", releasesToJson(status.releases))
                 .put("apkFilePath", status.apkFilePath)
+                .putOpt("lastCheckFailure", status.lastCheckFailure?.let(::failureToJson))
             is AppUpdateStatus.CheckFailed -> json.put("type", "CHECK_FAILED").put("message", status.message)
         }
         return json.toString()
@@ -35,11 +37,19 @@ object AppUpdateStatusJson {
                 releasesFromJson(json.getJSONArray("releases")),
                 json.getString("apkFilePath"),
                 checkedAt,
+                if (json.has("lastCheckFailure")) failureFromJson(json.getJSONObject("lastCheckFailure")) else null,
             )
             "CHECK_FAILED" -> AppUpdateStatus.CheckFailed(installed, json.getString("message"), checkedAt)
             else -> throw IllegalArgumentException("Unknown update status type: $type")
         }
     }
+
+    private fun failureToJson(failure: CheckFailure): JSONObject = JSONObject()
+        .put("message", failure.message)
+        .put("failedAtEpochMillis", failure.failedAtEpochMillis)
+
+    private fun failureFromJson(json: JSONObject): CheckFailure =
+        CheckFailure(json.getString("message"), json.getLong("failedAtEpochMillis"))
 
     private fun releasesToJson(releases: List<AppRelease>): JSONArray {
         val array = JSONArray()

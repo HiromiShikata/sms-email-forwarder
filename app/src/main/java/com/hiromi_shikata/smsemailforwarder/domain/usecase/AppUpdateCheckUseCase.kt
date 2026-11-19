@@ -2,12 +2,15 @@ package com.hiromi_shikata.smsemailforwarder.domain.usecase
 
 import com.hiromi_shikata.smsemailforwarder.domain.AppVersionCompare
 import com.hiromi_shikata.smsemailforwarder.domain.entity.AppUpdateStatus
+import com.hiromi_shikata.smsemailforwarder.domain.entity.CheckFailure
 import com.hiromi_shikata.smsemailforwarder.domain.repository.ApkDownloadRepository
 import com.hiromi_shikata.smsemailforwarder.domain.repository.AppUpdateNotifier
 import com.hiromi_shikata.smsemailforwarder.domain.repository.AppUpdateRepository
 import com.hiromi_shikata.smsemailforwarder.domain.repository.AppUpdateStatusRepository
 import com.hiromi_shikata.smsemailforwarder.domain.selectReleasesNewerThan
 import java.io.File
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class AppUpdateCheckUseCase(
     private val releaseRepository: AppUpdateRepository,
@@ -18,27 +21,25 @@ class AppUpdateCheckUseCase(
     private val nowEpochMillis: () -> Long,
     private val versionCompare: AppVersionCompare = AppVersionCompare(),
 ) {
-    fun execute(): AppUpdateStatus {
+    fun execute(): AppUpdateStatus = checkLock.withLock {
         val checkedAt = nowEpochMillis()
-        return try {
-            runCheck(checkedAt)
+        val previous = statusRepository.load()
+        try {
+            runCheck(previous, checkedAt)
         } catch (e: Exception) {
-            persist(
-                AppUpdateStatus.CheckFailed(
-                    installedVersion = installedVersion,
-                    message = e.message ?: e.javaClass.name,
-                    checkedAtEpochMillis = nowEpochMillis(),
-                ),
-            )
+            val failure = CheckFailure(e.message ?: e.javaClass.name, nowEpochMillis())
+            persist(failureStatus(previous, failure))
         }
     }
 
-    private fun persist(status: AppUpdateStatus): AppUpdateStatus {
-        statusRepository.save(status)
-        return status
+    private fun failureStatus(previous: AppUpdateStatus?, failure: CheckFailure): AppUpdateStatus {
+        if (previous is AppUpdateStatus.ReadyToInstall && File(previous.apkFilePath).exists()) {
+            return previous.copy(lastCheckFailure = failure)
+        }
+        return AppUpdateStatus.CheckFailed(installedVersion, failure.message, failure.failedAtEpochMillis)
     }
 
-    private fun runCheck(checkedAt: Long): AppUpdateStatus {
+    private fun runCheck(previous: AppUpdateStatus?, checkedAt: Long): AppUpdateStatus {
         val newer = selectReleasesNewerThan(
             releaseRepository.fetchReleases(),
             installedVersion,
@@ -49,18 +50,26 @@ class AppUpdateCheckUseCase(
             return persist(AppUpdateStatus.UpToDate(installedVersion, checkedAt))
         }
         val latest = newer.first()
-        val previous = statusRepository.load()
         if (previous is AppUpdateStatus.ReadyToInstall &&
             previous.releases.first().version == latest.version &&
             File(previous.apkFilePath).exists()
         ) {
-            return persist(previous.copy(releases = newer, checkedAtEpochMillis = checkedAt))
+            return persist(previous.copy(releases = newer, checkedAtEpochMillis = checkedAt, lastCheckFailure = null))
         }
-        statusRepository.save(AppUpdateStatus.Available(installedVersion, newer, checkedAt))
-        statusRepository.save(AppUpdateStatus.Downloading(installedVersion, newer, checkedAt))
+        persist(AppUpdateStatus.Available(installedVersion, newer, checkedAt))
+        persist(AppUpdateStatus.Downloading(installedVersion, newer, checkedAt))
         val apk = apkDownloadRepository.download(latest.apkDownloadUrl)
         val ready = persist(AppUpdateStatus.ReadyToInstall(installedVersion, newer, apk.absolutePath, checkedAt))
         notifier.notifyReadyToInstall(newer)
         return ready
+    }
+
+    private fun persist(status: AppUpdateStatus): AppUpdateStatus {
+        statusRepository.save(status)
+        return status
+    }
+
+    companion object {
+        private val checkLock = ReentrantLock()
     }
 }

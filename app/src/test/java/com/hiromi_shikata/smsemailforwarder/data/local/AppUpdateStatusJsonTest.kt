@@ -19,6 +19,13 @@ class AppUpdateStatusJsonTest {
             AppUpdateStatus.Downloading("0.1.344", releases, 3_000L),
             AppUpdateStatus.ReadyToInstall("0.1.344", releases, "/cache/update.apk", 4_000L),
             AppUpdateStatus.CheckFailed("0.1.344", "HTTP 503 while reading https://example.test", 5_000L),
+            AppUpdateStatus.ReadyToInstall(
+                "0.1.344",
+                releases,
+                "/cache/update.apk",
+                6_000L,
+                com.hiromi_shikata.smsemailforwarder.domain.entity.CheckFailure("HTTP 503", 7_000L),
+            ),
         )
         cases.forEach { status ->
             assertEquals(status, AppUpdateStatusJson.decode(AppUpdateStatusJson.encode(status)))

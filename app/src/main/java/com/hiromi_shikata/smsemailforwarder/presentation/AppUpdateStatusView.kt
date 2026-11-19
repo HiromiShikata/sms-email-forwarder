@@ -1,6 +1,7 @@
 package com.hiromi_shikata.smsemailforwarder.presentation
 
 import com.hiromi_shikata.smsemailforwarder.domain.entity.AppUpdateStatus
+import com.hiromi_shikata.smsemailforwarder.domain.entity.CheckFailure
 
 sealed interface AppUpdateStatusView {
     val installedVersion: String
@@ -25,6 +26,7 @@ sealed interface AppUpdateStatusView {
     data class ReadyToInstall(
         override val installedVersion: String,
         val latestVersion: String,
+        val lastCheckFailure: CheckFailure? = null,
     ) : AppUpdateStatusView
 
     data class CheckFailed(
@@ -44,6 +46,6 @@ fun resolveAppUpdateStatusView(installedVersion: String, status: AppUpdateStatus
     is AppUpdateStatus.UpToDate -> AppUpdateStatusView.UpToDate(installedVersion, status.checkedAtEpochMillis)
     is AppUpdateStatus.Available -> AppUpdateStatusView.Available(installedVersion, status.releases.first().version)
     is AppUpdateStatus.Downloading -> AppUpdateStatusView.Downloading(installedVersion, status.releases.first().version)
-    is AppUpdateStatus.ReadyToInstall -> AppUpdateStatusView.ReadyToInstall(installedVersion, status.releases.first().version)
+    is AppUpdateStatus.ReadyToInstall -> AppUpdateStatusView.ReadyToInstall(installedVersion, status.releases.first().version, status.lastCheckFailure)
     is AppUpdateStatus.CheckFailed -> AppUpdateStatusView.CheckFailed(installedVersion, status.message, status.checkedAtEpochMillis)
 }

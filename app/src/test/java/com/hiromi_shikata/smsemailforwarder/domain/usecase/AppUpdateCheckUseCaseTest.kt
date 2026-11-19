@@ -2,6 +2,7 @@ package com.hiromi_shikata.smsemailforwarder.domain.usecase
 
 import com.hiromi_shikata.smsemailforwarder.domain.entity.AppRelease
 import com.hiromi_shikata.smsemailforwarder.domain.entity.AppUpdateStatus
+import com.hiromi_shikata.smsemailforwarder.domain.entity.CheckFailure
 import com.hiromi_shikata.smsemailforwarder.domain.repository.ApkDownloadRepository
 import com.hiromi_shikata.smsemailforwarder.domain.repository.AppUpdateNotifier
 import com.hiromi_shikata.smsemailforwarder.domain.repository.AppUpdateRepository
@@ -132,5 +133,46 @@ class AppUpdateCheckUseCaseTest {
         assertEquals(AppUpdateStatus.ReadyToInstall("0.1.344", newer, apk.absolutePath, 9_000L), status)
         assertTrue(events.none { it.startsWith("download") })
         assertTrue(notifier.notified.isEmpty())
+    }
+
+    @Test
+    fun `a failed check keeps an already downloaded update installable and shows the failure`() {
+        val apk = File.createTempFile("update", ".apk")
+        val store = FakeStatusStore(events)
+        val ready = AppUpdateStatus.ReadyToInstall("0.1.344", newer, apk.absolutePath, 1_000L)
+        store.stored = ready
+        val notifier = FakeNotifier(events)
+        val status = useCase(releases = { throw IOException("HTTP 503 while reading manifest") }, store = store, notifier = notifier)
+            .execute()
+        assertEquals(
+            ready.copy(lastCheckFailure = CheckFailure("HTTP 503 while reading manifest", 9_000L)),
+            status,
+        )
+        assertEquals(status, store.stored)
+        assertTrue(apk.exists())
+        assertTrue(notifier.notified.isEmpty())
+    }
+
+    @Test
+    fun `a failed download of a newer update keeps the previously downloaded update installable`() {
+        val previousApk = File.createTempFile("update", ".apk")
+        val store = FakeStatusStore(events)
+        val previous = AppUpdateStatus.ReadyToInstall("0.1.344", listOf(newer[1]), previousApk.absolutePath, 1_000L)
+        store.stored = previous
+        val status = useCase(failDownload = true, store = store).execute()
+        assertEquals(
+            previous.copy(lastCheckFailure = CheckFailure("connection reset", 9_000L)),
+            status,
+        )
+        assertTrue(previousApk.exists())
+    }
+
+    @Test
+    fun `a failed check while downloading is recorded as a check failure`() {
+        val store = FakeStatusStore(events)
+        store.stored = AppUpdateStatus.Downloading("0.1.344", newer, 1_000L)
+        val status = useCase(releases = { throw IOException("HTTP 503") }, store = store).execute()
+        assertEquals(AppUpdateStatus.CheckFailed("0.1.344", "HTTP 503", 9_000L), status)
+        assertEquals(status, store.stored)
     }
 }

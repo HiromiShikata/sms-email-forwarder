@@ -16,8 +16,8 @@
     <string name="smtp_password_hint">App password from Google Account</string>
     <string name="forwarding_active">Forwarding SMS to: %s</string>
     <string name="setup_required">Setup required — tap Settings to configure email</string>
-    <string name="permissions_granted">SMS permissions granted ✓</string>
-    <string name="permissions_required">SMS permissions required — tap to grant</string>
+    <string name="permissions_granted">Required permissions granted ✓ (SMS and notifications)</string>
+    <string name="permissions_required">Required permissions missing (SMS or notifications) — tap to grant</string>
     <string name="auth_mode_label">Authentication Mode</string>
     <string name="auth_mode_smtp">Custom SMTP</string>
     <string name="auth_mode_google_account">Gmail Account (App Password)</string>
@@ -81,6 +81,9 @@ Update v%s is available. Download starts in the background.</string>
 Downloading update v%s…</string>
     <string name="app_update_status_ready">Installed version: %s
 Update v%s is downloaded. Tap Install to approve it.</string>
+    <string name="app_update_status_ready_with_failure">Installed version: %s
+v%s is downloaded. Tap Install to approve it.
+Last update check failed at %s: %s</string>
     <string name="app_update_status_check_failed">Installed version: %s
 Last update check failed at %s: %s</string>
     <string name="app_update_status_read_failed">Installed version: %s

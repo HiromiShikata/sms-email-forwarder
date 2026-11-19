@@ -127,11 +127,7 @@ class MainActivity : AppCompatActivity() {
         loadConfigOrShowError()
         viewModel.refreshUpdateStatus()
         enqueueImmediateAppUpdateCheck(this)
-        val smsGranted = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.RECEIVE_SMS,
-        ) == PackageManager.PERMISSION_GRANTED
-        updatePermissionStatus(smsGranted)
+        updatePermissionStatus(missingPermissions().isEmpty())
         val powerManager = getSystemService<PowerManager>() ?: return
         binding.batteryOptimizationButton.visibility =
             resolveBatteryOptimizationButtonVisibility(
@@ -176,7 +172,15 @@ class MainActivity : AppCompatActivity() {
                 view.installedVersion,
                 view.latestVersion,
             )
-            is AppUpdateStatusView.ReadyToInstall -> getString(
+            is AppUpdateStatusView.ReadyToInstall -> view.lastCheckFailure?.let { failure ->
+                getString(
+                    R.string.app_update_status_ready_with_failure,
+                    view.installedVersion,
+                    view.latestVersion,
+                    formatLocalTime(failure.failedAtEpochMillis),
+                    failure.message,
+                )
+            } ?: getString(
                 R.string.app_update_status_ready,
                 view.installedVersion,
                 view.latestVersion,
@@ -212,17 +216,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun missingPermissions(): List<String> =
+        missingRequiredPermissions(Build.VERSION.SDK_INT) { permission ->
+            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+        }
+
     private fun requestRequiredPermissions() {
-        val required = mutableListOf(
-            Manifest.permission.RECEIVE_SMS,
-            Manifest.permission.READ_SMS,
-        )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            required.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-        val missing = required.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
+        val missing = missingPermissions()
         if (missing.isNotEmpty()) {
             permissionLauncher.launch(missing.toTypedArray())
         } else {
