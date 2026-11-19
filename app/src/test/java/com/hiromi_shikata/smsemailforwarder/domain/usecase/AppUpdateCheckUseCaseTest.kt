@@ -23,7 +23,7 @@ class AppUpdateCheckUseCaseTest {
     private class FakeReleases(
         private val result: () -> List<AppRelease>,
     ) : AppUpdateRepository {
-        override fun fetchReleasesNewerThan(installedVersion: String): List<AppRelease> = result()
+        override fun fetchReleases(): List<AppRelease> = result()
     }
 
     private class FakeDownloads(

@@ -11,18 +11,19 @@ import com.hiromi_shikata.smsemailforwarder.R
 import com.hiromi_shikata.smsemailforwarder.domain.buildUpdateNotificationText
 import com.hiromi_shikata.smsemailforwarder.domain.entity.AppRelease
 import com.hiromi_shikata.smsemailforwarder.domain.repository.AppUpdateNotifier
-import com.hiromi_shikata.smsemailforwarder.presentation.AppUpdateInstallActivity
 
-class AndroidAppUpdateNotifier(private val context: Context) : AppUpdateNotifier {
+class AndroidAppUpdateNotifier(
+    private val context: Context,
+    private val tapIntent: Intent,
+) : AppUpdateNotifier {
 
     override fun notifyReadyToInstall(releases: List<AppRelease>) {
         val nm = context.getSystemService<NotificationManager>() ?: return
         val newest = releases.firstOrNull() ?: return
-        val installIntent = Intent(context, AppUpdateInstallActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             context,
             0,
-            installIntent,
+            tapIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notes = buildUpdateNotificationText(releases)

@@ -114,3 +114,17 @@ jobs:
               exit_on_error "Failed to create release '$RELEASE_TAG'."
             fi
           fi
+
+      - name: Attach release notes manifest to GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash {0}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          RELEASE_TAG="v${{ env.BUILD_VERSION_NAME }}"
+          RELEASES_JSON="$RUNNER_TEMP/releases.json"
+          MANIFEST="$RUNNER_TEMP/release-notes.json"
+          gh api --paginate "repos/${{ github.repository }}/releases?per_page=100" > "$RELEASES_JSON"
+          scripts/build-release-notes-manifest.sh "$RELEASES_JSON" > "$MANIFEST"
+          gh release upload "$RELEASE_TAG" "$MANIFEST" --clobber

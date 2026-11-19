@@ -14,9 +14,11 @@ import androidx.work.WorkerParameters
 import com.hiromi_shikata.smsemailforwarder.data.local.AndroidAppUpdateNotifier
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsAppUpdateStatusRepository
 import com.hiromi_shikata.smsemailforwarder.data.remote.CacheApkDownloadRepository
-import com.hiromi_shikata.smsemailforwarder.data.remote.GithubAppUpdateRepository
+import com.hiromi_shikata.smsemailforwarder.data.remote.ReleaseManifestAppUpdateRepository
 import com.hiromi_shikata.smsemailforwarder.domain.entity.AppUpdateStatus
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.AppUpdateCheckUseCase
+import com.hiromi_shikata.smsemailforwarder.presentation.AppUpdateInstallActivity
+import android.content.Intent
 import java.util.concurrent.TimeUnit
 
 const val APP_UPDATE_PERIODIC_WORK_NAME = "app_update_check"
@@ -25,9 +27,12 @@ const val APP_UPDATE_IMMEDIATE_WORK_NAME = "app_update_check_now"
 class AppUpdateCheckWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
     override fun doWork(): Result {
         val status = AppUpdateCheckUseCase(
-            releaseRepository = GithubAppUpdateRepository(BuildConfig.GITHUB_REPO),
+            releaseRepository = ReleaseManifestAppUpdateRepository(BuildConfig.UPDATE_RELEASES_BASE_URL),
             apkDownloadRepository = CacheApkDownloadRepository(applicationContext),
-            notifier = AndroidAppUpdateNotifier(applicationContext),
+            notifier = AndroidAppUpdateNotifier(
+                applicationContext,
+                Intent(applicationContext, AppUpdateInstallActivity::class.java),
+            ),
             statusRepository = SharedPrefsAppUpdateStatusRepository(applicationContext),
             installedVersion = BuildConfig.VERSION_NAME,
             nowEpochMillis = { System.currentTimeMillis() },

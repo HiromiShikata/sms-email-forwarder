@@ -14,7 +14,7 @@ android {
         versionCode project.hasProperty("buildVersionCode") ? project.property("buildVersionCode").toString().toInteger() : 1
         versionName System.getenv("BUILD_VERSION_NAME") ?: "0.1.0"
 
-        buildConfigField "String", "GITHUB_REPO", '"HiromiShikata/sms-email-forwarder"'
+        buildConfigField "String", "UPDATE_RELEASES_BASE_URL", "\"${System.getenv('UPDATE_RELEASES_BASE_URL') ?: 'https://github.com/HiromiShikata/sms-email-forwarder/releases'}\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

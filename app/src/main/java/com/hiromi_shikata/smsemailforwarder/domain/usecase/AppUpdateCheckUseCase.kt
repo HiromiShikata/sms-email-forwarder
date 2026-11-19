@@ -40,7 +40,7 @@ class AppUpdateCheckUseCase(
 
     private fun runCheck(checkedAt: Long): AppUpdateStatus {
         val newer = selectReleasesNewerThan(
-            releaseRepository.fetchReleasesNewerThan(installedVersion),
+            releaseRepository.fetchReleases(),
             installedVersion,
             versionCompare,
         )
