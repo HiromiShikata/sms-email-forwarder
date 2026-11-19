@@ -10,11 +10,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -224,5 +227,32 @@ class SettingsViewModelTest {
                     smtpPassword == "password"
             },
         )
+    }
+
+    @Test
+    fun `saveHttpsApiConfig rejects a non-https endpoint and saves nothing`() {
+        whenever(configGetUseCase.execute()).thenReturn(storedSmtpConfig)
+        viewModel.loadConfig()
+
+        val saved = viewModel.saveHttpsApiConfig(apiEndpointUrl = "http://example.com/send", apiKey = "key-1")
+
+        assertFalse(saved)
+        verify(configUpdateUseCase, never()).execute(any())
+    }
+
+    @Test
+    fun `saveHttpsApiConfig saves the https endpoint and key with HTTPS_API auth mode`() {
+        whenever(configGetUseCase.execute()).thenReturn(storedSmtpConfig)
+        viewModel.loadConfig()
+
+        val saved = viewModel.saveHttpsApiConfig(apiEndpointUrl = "https://example.com/send", apiKey = "key-1")
+
+        assertTrue(saved)
+        val captor = argumentCaptor<ForwardingConfig>()
+        verify(configUpdateUseCase).execute(captor.capture())
+        assertEquals(EmailAuthMode.HTTPS_API, captor.firstValue.authMode)
+        assertEquals("https://example.com/send", captor.firstValue.apiEndpointUrl)
+        assertEquals("key-1", captor.firstValue.apiKey)
+        assertEquals(storedSmtpConfig.destinationEmail, captor.firstValue.destinationEmail)
     }
 }

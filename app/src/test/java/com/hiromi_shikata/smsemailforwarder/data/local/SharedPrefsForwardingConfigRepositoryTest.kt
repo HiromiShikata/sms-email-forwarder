@@ -159,6 +159,44 @@ class SharedPrefsForwardingConfigRepositoryTest {
         }
     }
 
+    @Test
+    fun `HTTPS API config round-trips and stores the API key only as cipher output`() {
+        val cipher = FakeSmtpPasswordCipher()
+        val apiKey = "api-key-秘密-3"
+        val config = ForwardingConfig(
+            destinationEmail = "",
+            authMode = EmailAuthMode.HTTPS_API,
+            smtpHost = "smtp.gmail.com",
+            smtpPort = 587,
+            smtpUsername = "",
+            smtpPassword = "",
+            apiEndpointUrl = "https://example.com/send",
+            apiKey = apiKey,
+        )
+        val prefs = FakeSharedPreferences()
+        val repository = SharedPrefsForwardingConfigRepository(prefs, cipher)
+
+        repository.save(config)
+
+        assertEquals(config, repository.get())
+        assertFalse(
+            "plain API key must not appear in any stored value",
+            prefs.getAll().values.any { it == apiKey },
+        )
+        assertEquals(cipher.encrypt(apiKey), prefs.getString("api_key_encrypted", null))
+        assertEquals("https://example.com/send", prefs.getString("api_endpoint_url", null))
+    }
+
+    @Test
+    fun `get throws SmtpPasswordUnavailableException when the stored API key cannot be decrypted`() {
+        val prefs = FakeSharedPreferences()
+        prefs.edit().putString("api_key_encrypted", "not-decryptable").apply()
+
+        val thrown = thrownBy { SharedPrefsForwardingConfigRepository(prefs, FakeSmtpPasswordCipher()).get() }
+
+        assertTrue("expected SmtpPasswordUnavailableException but was $thrown", thrown is SmtpPasswordUnavailableException)
+    }
+
     private fun configWithPassword(authMode: EmailAuthMode, password: String) = ForwardingConfig(
         destinationEmail = "dest@example.com",
         authMode = authMode,

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode
 import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingConfig
+import com.hiromi_shikata.smsemailforwarder.domain.entity.isHttpsApiEndpointUrl
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.EmailSendTestUseCase
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.ForwardingConfigGetUseCase
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.ForwardingConfigUpdateUseCase
@@ -51,6 +52,23 @@ class SettingsViewModel(
             ),
         )
         _saved.value = true
+    }
+
+    fun saveHttpsApiConfig(
+        apiEndpointUrl: String,
+        apiKey: String,
+    ): Boolean {
+        if (!isHttpsApiEndpointUrl(apiEndpointUrl)) return false
+        val existing = _config.value ?: ForwardingConfig.EMPTY
+        configUpdateUseCase.execute(
+            existing.copy(
+                authMode = EmailAuthMode.HTTPS_API,
+                apiEndpointUrl = apiEndpointUrl,
+                apiKey = apiKey,
+            ),
+        )
+        _saved.value = true
+        return true
     }
 
     fun saveGoogleAccountConfig(

@@ -7,14 +7,20 @@ data class ForwardingConfig(
     val smtpPort: Int,
     val smtpUsername: String,
     val smtpPassword: String,
+    val apiEndpointUrl: String = "",
+    val apiKey: String = "",
 ) {
     val isComplete: Boolean
-        get() = destinationEmail.isNotBlank() && when (authMode) {
-            EmailAuthMode.SMTP -> smtpHost.isNotBlank() &&
+        get() = when (authMode) {
+            EmailAuthMode.SMTP -> destinationEmail.isNotBlank() &&
+                smtpHost.isNotBlank() &&
                 smtpPort > 0 &&
                 smtpUsername.isNotBlank() &&
                 smtpPassword.isNotBlank()
-            EmailAuthMode.GOOGLE_ACCOUNT -> smtpUsername.isNotBlank() && smtpPassword.isNotBlank()
+            EmailAuthMode.GOOGLE_ACCOUNT -> destinationEmail.isNotBlank() &&
+                smtpUsername.isNotBlank() &&
+                smtpPassword.isNotBlank()
+            EmailAuthMode.HTTPS_API -> isHttpsApiEndpointUrl(apiEndpointUrl) && apiKey.isNotBlank()
         }
 
     companion object {

@@ -25,6 +25,8 @@ class SharedPrefsForwardingConfigRepository internal constructor(
         smtpPort = prefs.getInt(KEY_SMTP_PORT, 587),
         smtpUsername = prefs.getString(KEY_SMTP_USERNAME, "") ?: "",
         smtpPassword = readSmtpPassword(),
+        apiEndpointUrl = prefs.getString(KEY_API_ENDPOINT_URL, "") ?: "",
+        apiKey = readApiKey(),
     )
 
     override fun save(config: ForwardingConfig) {
@@ -36,7 +38,18 @@ class SharedPrefsForwardingConfigRepository internal constructor(
             .putString(KEY_SMTP_USERNAME, config.smtpUsername)
             .putString(KEY_SMTP_PASSWORD_ENCRYPTED, cipher.encrypt(config.smtpPassword))
             .remove(KEY_SMTP_PASSWORD_LEGACY)
+            .putString(KEY_API_ENDPOINT_URL, config.apiEndpointUrl)
+            .putString(KEY_API_KEY_ENCRYPTED, cipher.encrypt(config.apiKey))
             .apply()
+    }
+
+    private fun readApiKey(): String {
+        val encryptedApiKey = prefs.getString(KEY_API_KEY_ENCRYPTED, null) ?: return ""
+        return try {
+            cipher.decrypt(encryptedApiKey)
+        } catch (e: Exception) {
+            throw SmtpPasswordUnavailableException("Stored HTTPS API key cannot be decrypted.", e)
+        }
     }
 
     private fun readSmtpPassword(): String {
@@ -68,5 +81,7 @@ class SharedPrefsForwardingConfigRepository internal constructor(
         private const val KEY_SMTP_USERNAME = "smtp_username"
         private const val KEY_SMTP_PASSWORD_LEGACY = "smtp_password"
         private const val KEY_SMTP_PASSWORD_ENCRYPTED = "smtp_password_encrypted"
+        private const val KEY_API_ENDPOINT_URL = "api_endpoint_url"
+        private const val KEY_API_KEY_ENCRYPTED = "api_key_encrypted"
     }
 }
