@@ -1,10 +1,10 @@
 package com.hiromi_shikata.smsemailforwarder.data.remote
 
 import android.content.Context
-import android.util.Log
 import com.hiromi_shikata.smsemailforwarder.domain.repository.ApkDownloadRepository
 import java.io.File
 import java.io.IOException
+import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
 
@@ -12,23 +12,45 @@ class CacheApkDownloadRepository(
     private val context: Context,
 ) : ApkDownloadRepository {
     override fun download(url: String): File {
-        val file = File(context.cacheDir, "update-${urlDigest(url)}.apk")
+        val digest = urlDigest(url)
+        val file = File(context.cacheDir, "update-$digest.apk")
         if (file.exists()) return file
-        val partFile = File(context.cacheDir, "${file.name}.part")
-        URL(url).openStream().use { input ->
-            partFile.outputStream().use { output ->
-                input.copyTo(output)
+        val partFile = File.createTempFile("update-$digest-", ".apk.part", context.cacheDir)
+        var completed = false
+        try {
+            downloadTo(url, partFile)
+            if (!partFile.renameTo(file)) {
+                throw IOException("Failed to move the downloaded update to ${file.name}")
             }
-        }
-        if (!partFile.renameTo(file)) {
-            throw IOException("Failed to move the downloaded update to ${file.name}")
+            completed = true
+        } finally {
+            if (!completed && !partFile.delete() && partFile.exists()) {
+                System.err.println("$TAG: Failed to delete partial update file ${partFile.name}")
+            }
         }
         staleCachedFiles(context.cacheDir, file).forEach { stale ->
             if (!stale.delete()) {
-                Log.w(TAG, "Failed to delete stale update file ${stale.name}")
+                System.err.println("$TAG: Failed to delete stale update file ${stale.name}")
             }
         }
         return file
+    }
+
+    private fun downloadTo(url: String, target: File) {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        try {
+            connection.connectTimeout = CONNECT_TIMEOUT_MILLIS
+            connection.readTimeout = READ_TIMEOUT_MILLIS
+            val expectedLength = connection.contentLengthLong
+            val copiedLength = connection.inputStream.use { input ->
+                target.outputStream().use { output -> input.copyTo(output) }
+            }
+            if (expectedLength > 0 && copiedLength != expectedLength) {
+                throw IOException("Incomplete update download: expected $expectedLength bytes, got $copiedLength")
+            }
+        } finally {
+            connection.disconnect()
+        }
     }
 
     private fun urlDigest(url: String): String =
@@ -39,6 +61,8 @@ class CacheApkDownloadRepository(
 
     private companion object {
         const val TAG = "CacheApkDownload"
+        const val CONNECT_TIMEOUT_MILLIS = 15_000
+        const val READ_TIMEOUT_MILLIS = 60_000
     }
 }
 
@@ -47,5 +71,5 @@ internal fun staleCachedFiles(cacheDir: File, keep: File): List<File> =
         candidate.isFile &&
             candidate != keep &&
             candidate.name.startsWith("update-") &&
-            (candidate.name.endsWith(".apk") || candidate.name.endsWith(".apk.part"))
+            candidate.name.endsWith(".apk")
     }

@@ -93,7 +93,8 @@ jobs:
             fi
           done
 
-          PREV_TAG="$(gh release list --exclude-drafts --limit 5 --json tagName --jq '.[].tagName' | grep -vxF "$RELEASE_TAG" | head -n 1 || true)"
+          RELEASES="$(gh release list --exclude-drafts --limit 5 --json tagName --jq '.[].tagName')" || exit_on_error "Failed to list releases."
+          PREV_TAG="$(printf '%s\n' "$RELEASES" | grep -vxF "$RELEASE_TAG" | head -n 1 || true)"
           if ! RELEASE_NOTES_CHANGES="$(bash scripts/generate-release-notes.sh "$PREV_TAG" "$GITHUB_SHA")"; then
             exit_on_error "Failed to generate release notes."
           fi

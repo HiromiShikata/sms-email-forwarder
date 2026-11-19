@@ -11,6 +11,8 @@ import com.hiromi_shikata.smsemailforwarder.domain.repository.AppUpdateNotifier
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.ApkDownloadUseCase
 import com.hiromi_shikata.smsemailforwarder.domain.usecase.AppUpdateCheckUseCase
 
+private const val TAG = "AppUpdateCheckWorker"
+
 internal fun checkUpdateAndNotify(
     useCase: AppUpdateCheckUseCase,
     downloadUseCase: ApkDownloadUseCase,
@@ -32,6 +34,7 @@ internal fun checkUpdateAndNotify(
             }
         }
     } catch (e: Exception) {
+        System.err.println("$TAG: App update check failed: ${e.stackTraceToString()}")
         Result.retry()
     }
 }
