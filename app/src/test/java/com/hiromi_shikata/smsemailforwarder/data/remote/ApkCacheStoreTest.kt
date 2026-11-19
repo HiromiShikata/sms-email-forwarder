@@ -81,4 +81,16 @@ class ApkCacheStoreTest {
         assertFalse(java.io.File(cacheDir, "update-abc.apk").exists())
         assertFalse(cacheDir.listFiles().orEmpty().any { it.name.endsWith(".part") })
     }
+
+    @Test
+    fun `rename failure throws IOException and leaves neither the target nor a part file`() {
+        val cacheDir = tmp.newFolder("cache")
+
+        assertThrows(IOException::class.java) {
+            cacheApk(cacheDir, "abc", body.size.toLong(), open = { ByteArrayInputStream(body) }, rename = { _, _ -> false })
+        }
+
+        assertFalse(java.io.File(cacheDir, "update-abc.apk").exists())
+        assertFalse(cacheDir.listFiles().orEmpty().any { it.name.endsWith(".apk.part") })
+    }
 }
