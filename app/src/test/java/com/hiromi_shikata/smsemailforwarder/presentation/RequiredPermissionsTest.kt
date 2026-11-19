@@ -32,4 +32,27 @@ class RequiredPermissionsTest {
             assertEquals(name, expected, missingRequiredPermissions(sdk) { it in granted })
         }
     }
+
+    @Test
+    fun `status text names exactly the missing permissions and shows granted only when none are missing`() {
+        val cases = listOf(
+            "all granted" to Pair(emptyList<String>(), PermissionStatusText.Granted),
+            "notifications only missing" to Pair(
+                listOf(Manifest.permission.POST_NOTIFICATIONS),
+                PermissionStatusText.Missing(sms = false, notifications = true),
+            ),
+            "sms only missing" to Pair(
+                listOf(Manifest.permission.READ_SMS),
+                PermissionStatusText.Missing(sms = true, notifications = false),
+            ),
+            "both missing" to Pair(
+                listOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.POST_NOTIFICATIONS),
+                PermissionStatusText.Missing(sms = true, notifications = true),
+            ),
+        )
+        cases.forEach { (name, case) ->
+            val (missing, expected) = case
+            assertEquals(name, expected, resolvePermissionStatusText(missing))
+        }
+    }
 }

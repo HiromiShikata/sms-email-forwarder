@@ -14,3 +14,16 @@ internal fun requiredPermissions(sdkInt: Int): List<String> {
 
 internal fun missingRequiredPermissions(sdkInt: Int, isGranted: (String) -> Boolean): List<String> =
     requiredPermissions(sdkInt).filterNot(isGranted)
+
+internal sealed interface PermissionStatusText {
+    data object Granted : PermissionStatusText
+    data class Missing(val sms: Boolean, val notifications: Boolean) : PermissionStatusText
+}
+
+internal fun resolvePermissionStatusText(missing: List<String>): PermissionStatusText {
+    if (missing.isEmpty()) return PermissionStatusText.Granted
+    return PermissionStatusText.Missing(
+        sms = missing.any { it == Manifest.permission.RECEIVE_SMS || it == Manifest.permission.READ_SMS },
+        notifications = Manifest.permission.POST_NOTIFICATIONS in missing,
+    )
+}

@@ -17,7 +17,9 @@
     <string name="forwarding_active">Forwarding SMS to: %s</string>
     <string name="setup_required">Setup required — tap Settings to configure email</string>
     <string name="permissions_granted">Required permissions granted ✓ (SMS and notifications)</string>
-    <string name="permissions_required">Required permissions missing (SMS or notifications) — tap to grant</string>
+    <string name="permissions_missing_sms">Missing: SMS permissions — tap to grant</string>
+    <string name="permissions_missing_notifications">Missing: notification permission — tap to grant</string>
+    <string name="permissions_missing_sms_and_notifications">Missing: SMS and notification permissions — tap to grant</string>
     <string name="auth_mode_label">Authentication Mode</string>
     <string name="auth_mode_smtp">Custom SMTP</string>
     <string name="auth_mode_google_account">Gmail Account (App Password)</string>
@@ -58,7 +60,7 @@
     <string name="app_update_channel_description">Alerts when a new version of the app is available</string>
     <string name="app_update_notification_title">Update Available</string>
     <string name="app_update_notification_body">Version %s is downloaded and ready to install. Tap to review the install prompt.</string>
-    <string name="grant_sms_permission">Grant SMS Permission</string>
+    <string name="grant_sms_permission">Grant required permissions</string>
     <string name="view_log">View Forwarding Log</string>
     <string name="forwarding_history">Forwarding History</string>
     <string name="share_log">Share Log</string>

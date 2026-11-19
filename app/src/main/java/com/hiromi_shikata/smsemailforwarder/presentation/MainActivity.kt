@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { permissions ->
-        updatePermissionStatus(resolvePermissionGrantStatus(permissions))
+        updatePermissionStatus(missingPermissions())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -127,7 +127,7 @@ class MainActivity : AppCompatActivity() {
         loadConfigOrShowError()
         viewModel.refreshUpdateStatus()
         enqueueImmediateAppUpdateCheck(this)
-        updatePermissionStatus(missingPermissions().isEmpty())
+        updatePermissionStatus(missingPermissions())
         val powerManager = getSystemService<PowerManager>() ?: return
         binding.batteryOptimizationButton.visibility =
             resolveBatteryOptimizationButtonVisibility(
@@ -226,17 +226,20 @@ class MainActivity : AppCompatActivity() {
         if (missing.isNotEmpty()) {
             permissionLauncher.launch(missing.toTypedArray())
         } else {
-            updatePermissionStatus(true)
+            updatePermissionStatus(emptyList())
         }
     }
 
-    private fun updatePermissionStatus(granted: Boolean) {
-        binding.grantPermissionButton.visibility = resolveGrantPermissionButtonVisibility(granted)
-        binding.permissionStatus.visibility = if (granted) View.VISIBLE else View.GONE
-        binding.permissionStatus.text = if (granted) {
-            getString(R.string.permissions_granted)
-        } else {
-            getString(R.string.permissions_required)
+    private fun updatePermissionStatus(missing: List<String>) {
+        binding.grantPermissionButton.visibility = resolveGrantPermissionButtonVisibility(missing.isEmpty())
+        binding.permissionStatus.visibility = View.VISIBLE
+        binding.permissionStatus.text = when (val status = resolvePermissionStatusText(missing)) {
+            PermissionStatusText.Granted -> getString(R.string.permissions_granted)
+            is PermissionStatusText.Missing -> when {
+                status.sms && status.notifications -> getString(R.string.permissions_missing_sms_and_notifications)
+                status.sms -> getString(R.string.permissions_missing_sms)
+                else -> getString(R.string.permissions_missing_notifications)
+            }
         }
     }
 }
