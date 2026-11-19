@@ -5,9 +5,15 @@ import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingConfig
 import com.hiromi_shikata.smsemailforwarder.domain.entity.SmsMessage
 import com.hiromi_shikata.smsemailforwarder.domain.repository.EmailSendRepository
 
+internal fun buildForwardingEmailSendRepository(): ModeRoutingEmailSendRepository =
+    ModeRoutingEmailSendRepository(
+        smtp = SmtpEmailSendRepository(),
+        httpsApi = HttpsApiEmailSendRepository(),
+    )
+
 class ModeRoutingEmailSendRepository(
-    private val smtp: EmailSendRepository,
-    private val httpsApi: EmailSendRepository,
+    val smtp: EmailSendRepository,
+    val httpsApi: EmailSendRepository,
 ) : EmailSendRepository {
     override fun send(message: SmsMessage, config: ForwardingConfig) {
         when (config.authMode) {

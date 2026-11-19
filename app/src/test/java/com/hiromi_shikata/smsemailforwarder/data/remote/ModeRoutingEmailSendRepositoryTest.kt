@@ -5,9 +5,18 @@ import com.hiromi_shikata.smsemailforwarder.domain.entity.ForwardingConfig
 import com.hiromi_shikata.smsemailforwarder.domain.entity.SmsMessage
 import com.hiromi_shikata.smsemailforwarder.domain.repository.EmailSendRepository
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ModeRoutingEmailSendRepositoryTest {
+    @Test
+    fun `forwarding repository wires the HTTPS sender and the SMTP sender to their modes`() {
+        val router = buildForwardingEmailSendRepository()
+
+        assertTrue(router.smtp is SmtpEmailSendRepository)
+        assertTrue(router.httpsApi is HttpsApiEmailSendRepository)
+    }
+
     @Test
     fun `send delegates to the sender that matches the configured auth mode`() {
         val cases = listOf(

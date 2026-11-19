@@ -84,7 +84,7 @@ internal data class HttpsApiHttpResponse(
 
 internal const val HTTPS_API_TIMEOUT_MILLIS = 30_000
 
-private const val HTTP_OK = 200
+private val HTTP_SUCCESS_RANGE = 200..299
 private val RECEIVED_AT_FORMAT: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC)
 
@@ -97,7 +97,7 @@ internal fun buildHttpsApiRequestBody(message: SmsMessage, apiKey: String): Stri
         .toString()
 
 internal fun interpretHttpsApiResponse(statusCode: Int, body: String) {
-    if (statusCode != HTTP_OK) {
+    if (statusCode !in HTTP_SUCCESS_RANGE) {
         throw TransientEmailSendException("HTTPS API returned HTTP $statusCode.", null)
     }
     val json = try {

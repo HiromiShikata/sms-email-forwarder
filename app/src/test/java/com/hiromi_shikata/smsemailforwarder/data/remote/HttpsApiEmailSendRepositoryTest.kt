@@ -62,6 +62,7 @@ class HttpsApiEmailSendRepositoryTest {
             ResponseCase("JSON array is transient", 200, "[]", TransientEmailSendException::class.java),
             ResponseCase("HTTP 500 is transient even with ok body", 500, """{"result":"ok"}""", TransientEmailSendException::class.java),
             ResponseCase("HTTP 503 is transient", 503, "", TransientEmailSendException::class.java),
+            ResponseCase("HTTP 201 with ok body is success", 201, """{"result":"ok"}""", expectedClass = null),
         )
         for (case in cases) {
             val thrown = captureThrowable { interpretHttpsApiResponse(case.statusCode, case.body) }
@@ -123,6 +124,18 @@ class HttpsApiEmailSendRepositoryTest {
             val thrown = captureThrowable { HttpsApiEmailSendRepository().send(sms, configFor("${server.baseUrl}/post")) }
 
             assertTrue(thrown is TransientEmailSendException)
+        }
+    }
+
+    @Test
+    fun `send maps a redirect without a Location header to a transient failure`() {
+        FakeHttpsApiServer().use { server ->
+            server.route("/post") { Reply(status = 302) }
+
+            val thrown = captureThrowable { HttpsApiEmailSendRepository().send(sms, configFor("${server.baseUrl}/post")) }
+
+            assertTrue(thrown is TransientEmailSendException)
+            assertEquals(1, server.requests.size)
         }
     }
 
