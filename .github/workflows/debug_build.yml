@@ -94,7 +94,7 @@ jobs:
           done
 
           RELEASES="$(gh release list --exclude-drafts --limit 5 --json tagName --jq '.[].tagName')" || exit_on_error "Failed to list releases."
-          PREV_TAG="$(printf '%s\n' "$RELEASES" | grep -vxF "$RELEASE_TAG" | head -n 1 || true)"
+          PREV_TAG="$(printf '%s\n' "$RELEASES" | bash scripts/previous-release-tag.sh "$RELEASE_TAG")" || exit_on_error "Failed to select the previous release tag."
           if ! RELEASE_NOTES_CHANGES="$(bash scripts/generate-release-notes.sh "$PREV_TAG" "$GITHUB_SHA")"; then
             exit_on_error "Failed to generate release notes."
           fi
@@ -115,7 +115,9 @@ jobs:
             if ! gh release upload "$RELEASE_TAG" "$STABLE_DIR"/* --clobber; then
               exit_on_error "Failed to upload assets to existing release '$RELEASE_TAG'."
             fi
-            gh release edit "$RELEASE_TAG" --title "${{ env.BUILD_VERSION_NAME }}" --notes-file "$NOTES_FILE" --latest || true
+            if ! gh release edit "$RELEASE_TAG" --title "${{ env.BUILD_VERSION_NAME }}" --notes-file "$NOTES_FILE" --latest; then
+              exit_on_error "Failed to update release '$RELEASE_TAG'."
+            fi
           else
             if ! gh release create "$RELEASE_TAG" "$STABLE_DIR"/* --target "$GITHUB_SHA" --title "${{ env.BUILD_VERSION_NAME }}" --notes-file "$NOTES_FILE" --latest; then
               exit_on_error "Failed to create release '$RELEASE_TAG'."

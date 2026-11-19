@@ -16,15 +16,22 @@ class CacheApkDownloadRepository(
         val file = File(context.cacheDir, "update-$digest.apk")
         if (file.exists()) return file
         val partFile = File.createTempFile("update-$digest-", ".apk.part", context.cacheDir)
-        var completed = false
+        var renamed = false
         try {
-            downloadTo(url, partFile)
+            val connection = URL(url).openConnection() as HttpURLConnection
+            try {
+                connection.connectTimeout = CONNECT_TIMEOUT_MILLIS
+                connection.readTimeout = READ_TIMEOUT_MILLIS
+                writeVerifiedApk(partFile, connection.contentLengthLong) { connection.inputStream }
+            } finally {
+                connection.disconnect()
+            }
             if (!partFile.renameTo(file)) {
                 throw IOException("Failed to move the downloaded update to ${file.name}")
             }
-            completed = true
+            renamed = true
         } finally {
-            if (!completed && !partFile.delete() && partFile.exists()) {
+            if (!renamed && partFile.exists() && !partFile.delete()) {
                 System.err.println("$TAG: Failed to delete partial update file ${partFile.name}")
             }
         }
@@ -34,23 +41,6 @@ class CacheApkDownloadRepository(
             }
         }
         return file
-    }
-
-    private fun downloadTo(url: String, target: File) {
-        val connection = URL(url).openConnection() as HttpURLConnection
-        try {
-            connection.connectTimeout = CONNECT_TIMEOUT_MILLIS
-            connection.readTimeout = READ_TIMEOUT_MILLIS
-            val expectedLength = connection.contentLengthLong
-            val copiedLength = connection.inputStream.use { input ->
-                target.outputStream().use { output -> input.copyTo(output) }
-            }
-            if (expectedLength > 0 && copiedLength != expectedLength) {
-                throw IOException("Incomplete update download: expected $expectedLength bytes, got $copiedLength")
-            }
-        } finally {
-            connection.disconnect()
-        }
     }
 
     private fun urlDigest(url: String): String =
