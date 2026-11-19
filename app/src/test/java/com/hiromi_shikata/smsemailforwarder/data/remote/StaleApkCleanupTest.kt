@@ -21,11 +21,18 @@ class StaleApkCleanupTest {
 
     private val cases = listOf(
         Case(
-            name = "returns other update APKs and partial downloads, but not the kept file",
+            name = "returns other finished update APKs, but not the kept file",
             files = listOf("update-aaaa.apk", "update-bbbb.apk.part", "update-cccc.apk"),
             directories = emptyList(),
             keep = "update-cccc.apk",
-            expectedStaleNames = listOf("update-aaaa.apk", "update-bbbb.apk.part"),
+            expectedStaleNames = listOf("update-aaaa.apk"),
+        ),
+        Case(
+            name = "leaves an in-flight partial download alone",
+            files = listOf("update-xyz.apk.part"),
+            directories = emptyList(),
+            keep = "update-keep.apk",
+            expectedStaleNames = emptyList(),
         ),
         Case(
             name = "ignores files that do not match the update APK naming and subdirectories",
