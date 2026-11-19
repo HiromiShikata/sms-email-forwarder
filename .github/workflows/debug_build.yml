@@ -8,6 +8,10 @@ on:
     branches:
       - '**'
 
+concurrency:
+  group: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'release-main' || format('non-release-{0}', github.run_id) }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -91,7 +95,13 @@ jobs:
             fi
           done
 
-          PREV_TAG=$(gh release list --exclude-drafts --limit 10 --json tagName --jq '.[].tagName' | grep -vxF "$RELEASE_TAG" | head -n 1 || true)
+          RELEASES_JSON="$RUNNER_TEMP/releases.json"
+          MANIFEST="$RUNNER_TEMP/release-notes.json"
+          gh api --paginate "repos/${{ github.repository }}/releases?per_page=100" > "$RELEASES_JSON" || exit_on_error "Failed to list releases."
+          CONTEXT=$(scripts/release-publish-context.sh "$RELEASES_JSON" "$RELEASE_TAG") || exit_on_error "Failed to read release context for '$RELEASE_TAG'."
+          PREV_TAG=$(printf '%s\n' "$CONTEXT" | sed -n 's/^PREVIOUS_TAG=//p')
+          IS_NEWEST=$(printf '%s\n' "$CONTEXT" | sed -n 's/^IS_NEWEST=//p')
+
           if [ -n "$PREV_TAG" ]; then
             CHANGES=$(gh api "repos/${{ github.repository }}/compare/${PREV_TAG}...${GITHUB_SHA}" --jq '.commits[] | "- " + (.commit.message | split("\n")[0])') || exit_on_error "Failed to list changes from ${PREV_TAG} to ${GITHUB_SHA}."
             HEADER="Changes since ${PREV_TAG}:"
@@ -115,9 +125,7 @@ jobs:
             fi
           fi
 
-          RELEASES_JSON="$RUNNER_TEMP/releases.json"
-          MANIFEST="$RUNNER_TEMP/release-notes.json"
           gh api --paginate "repos/${{ github.repository }}/releases?per_page=100" > "$RELEASES_JSON" || exit_on_error "Failed to list releases."
           scripts/build-release-notes-manifest.sh "$RELEASES_JSON" "$RELEASE_TAG" > "$MANIFEST" || exit_on_error "Failed to build release-notes.json for '$RELEASE_TAG'."
           gh release upload "$RELEASE_TAG" "$MANIFEST" --clobber || exit_on_error "Failed to upload release-notes.json to '$RELEASE_TAG'."
-          gh release edit "$RELEASE_TAG" --draft=false --latest || exit_on_error "Failed to publish release '$RELEASE_TAG' as latest."
+          gh release edit "$RELEASE_TAG" --draft=false --latest="$IS_NEWEST" || exit_on_error "Failed to publish release '$RELEASE_TAG'."
