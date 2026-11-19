@@ -27,7 +27,7 @@ class ReleaseNotesScriptTest {
         git("tag", "v0.1.0")
         commit("feat: third", day = 3)
         git("checkout", "-q", "-b", "side")
-        commit("fix: side work", day = 4)
+        commit("fix: side work", day = 4, file = "side.txt")
         git("checkout", "-q", "main")
         commit("feat: fifth", day = 5)
         git("merge", "--no-ff", "-q", "-m", "Merge branch 'side'", "side", day = 6)
@@ -85,9 +85,9 @@ class ReleaseNotesScriptTest {
 
     private fun line(subject: String): String = "- $subject (${shortShaBySubject.getValue(subject)})"
 
-    private fun commit(subject: String, day: Int) {
-        File(repo, "history.txt").appendText("$subject\n")
-        git("add", "history.txt", day = day)
+    private fun commit(subject: String, day: Int, file: String = "history.txt") {
+        File(repo, file).appendText("$subject\n")
+        git("add", file, day = day)
         git("commit", "-q", "-m", subject, day = day)
         shortShaBySubject[subject] = git("rev-parse", "--short", "HEAD").trim()
     }
