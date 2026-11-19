@@ -95,21 +95,8 @@ jobs:
 
           RELEASES="$(gh release list --exclude-drafts --limit 5 --json tagName --jq '.[].tagName')" || exit_on_error "Failed to list releases."
           PREV_TAG="$(printf '%s\n' "$RELEASES" | bash scripts/previous-release-tag.sh "$RELEASE_TAG")" || exit_on_error "Failed to select the previous release tag."
-          if ! RELEASE_NOTES_CHANGES="$(bash scripts/generate-release-notes.sh "$PREV_TAG" "$GITHUB_SHA")"; then
-            exit_on_error "Failed to generate release notes."
-          fi
-          if [ -z "$RELEASE_NOTES_CHANGES" ]; then
-            RELEASE_NOTES_CHANGES="No changes since the previous release."
-          fi
-
           NOTES_FILE="$(mktemp)"
-          {
-            echo "Automated build of main at ${GITHUB_SHA:0:7} (version ${{ env.BUILD_VERSION_NAME }}, build ${{ github.run_number }}). Install sms-email-forwarder_arm64-v8a.apk for most modern Android devices, or sms-email-forwarder_universal.apk for any ABI."
-            echo
-            echo "## Changes since ${PREV_TAG:-the start of the history}"
-            echo
-            echo "$RELEASE_NOTES_CHANGES"
-          } > "$NOTES_FILE"
+          bash scripts/compose-release-body.sh "${{ env.BUILD_VERSION_NAME }}" "${{ github.run_number }}" "${GITHUB_SHA:0:7}" "$PREV_TAG" "$NOTES_FILE" || exit_on_error "Failed to compose release notes."
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             if ! gh release upload "$RELEASE_TAG" "$STABLE_DIR"/* --clobber; then
