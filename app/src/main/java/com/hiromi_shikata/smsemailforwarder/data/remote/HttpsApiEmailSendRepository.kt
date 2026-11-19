@@ -70,7 +70,7 @@ class HttpsApiEmailSendRepository(
     }
 
     private companion object {
-        val REDIRECT_STATUS_CODES = setOf(301, 302, 303, 307, 308)
+        val REDIRECT_STATUS_CODES = setOf(302)
         const val MAX_REDIRECTS = 5
         const val HTTP_BAD_REQUEST = 400
     }
@@ -97,21 +97,23 @@ internal fun buildHttpsApiRequestBody(message: SmsMessage, apiKey: String): Stri
         .toString()
 
 internal fun interpretHttpsApiResponse(statusCode: Int, body: String) {
-    if (statusCode !in HTTP_SUCCESS_RANGE) {
-        throw TransientEmailSendException("HTTPS API returned HTTP $statusCode.", null)
-    }
     val json = try {
         JSONObject(body)
     } catch (error: JSONException) {
+        if (statusCode !in HTTP_SUCCESS_RANGE) {
+            throw TransientEmailSendException("HTTPS API returned HTTP $statusCode.", null)
+        }
         throw TransientEmailSendException("HTTPS API returned a non-JSON response.", error)
+    }
+    if (json.optString("result") == "ng" && json.optString("message") == "unauthorized") {
+        throw HttpsApiUnauthorizedException()
+    }
+    if (statusCode !in HTTP_SUCCESS_RANGE) {
+        throw TransientEmailSendException("HTTPS API returned HTTP $statusCode.", null)
     }
     when (json.optString("result")) {
         "ok" -> return
-        "ng" -> if (json.optString("message") == "unauthorized") {
-            throw HttpsApiUnauthorizedException()
-        } else {
-            throw TransientEmailSendException("HTTPS API reported a temporary failure.", null)
-        }
+        "ng" -> throw TransientEmailSendException("HTTPS API reported a temporary failure.", null)
         else -> throw TransientEmailSendException("HTTPS API returned an unexpected result.", null)
     }
 }
