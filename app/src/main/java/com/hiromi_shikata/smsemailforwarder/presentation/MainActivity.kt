@@ -25,6 +25,7 @@ import com.hiromi_shikata.smsemailforwarder.BuildConfig
 import com.hiromi_shikata.smsemailforwarder.R
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsAppUpdateStatusRepository
 import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsForwardingConfigRepository
+import com.hiromi_shikata.smsemailforwarder.data.local.SharedPrefsPermissionRequestHistory
 import com.hiromi_shikata.smsemailforwarder.data.local.SmtpPasswordUnavailableException
 import com.hiromi_shikata.smsemailforwarder.databinding.ActivityMainBinding
 import com.hiromi_shikata.smsemailforwarder.domain.entity.EmailAuthMode
@@ -80,7 +81,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.grantPermissionButton.setOnClickListener {
-            requestRequiredPermissions()
+            grantRequiredPermissions(allowSettings = true)
         }
 
         binding.batteryOptimizationButton.setOnClickListener {
@@ -118,7 +119,7 @@ class MainActivity : AppCompatActivity() {
             .getWorkInfosForUniqueWorkLiveData(APP_UPDATE_IMMEDIATE_WORK_NAME)
             .observe(this) { viewModel.refreshUpdateStatus() }
 
-        requestRequiredPermissions()
+        grantRequiredPermissions(allowSettings = false)
         loadConfigOrShowError()
     }
 
@@ -221,12 +222,22 @@ class MainActivity : AppCompatActivity() {
             ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
         }
 
-    private fun requestRequiredPermissions() {
+    private fun grantRequiredPermissions(allowSettings: Boolean) {
         val missing = missingPermissions()
-        if (missing.isNotEmpty()) {
-            permissionLauncher.launch(missing.toTypedArray())
-        } else {
-            updatePermissionStatus(emptyList())
+        val action = resolvePermissionGrantAction(
+            missing = missing,
+            requestedBefore = SharedPrefsPermissionRequestHistory(this).load(),
+            shouldShowRationale = { shouldShowRequestPermissionRationale(it) },
+        )
+        when (action) {
+            is PermissionGrantAction.Request -> {
+                SharedPrefsPermissionRequestHistory(this).add(action.permissions)
+                permissionLauncher.launch(action.permissions.toTypedArray())
+            }
+            is PermissionGrantAction.OpenSettings -> if (allowSettings) {
+                startActivity(permissionSettingsIntent(action.permission, packageName))
+            }
+            PermissionGrantAction.None -> updatePermissionStatus(missing)
         }
     }
 

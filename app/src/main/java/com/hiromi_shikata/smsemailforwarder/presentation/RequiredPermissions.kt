@@ -27,3 +27,23 @@ internal fun resolvePermissionStatusText(missing: List<String>): PermissionStatu
         notifications = Manifest.permission.POST_NOTIFICATIONS in missing,
     )
 }
+
+internal sealed interface PermissionGrantAction {
+    data class Request(val permissions: List<String>) : PermissionGrantAction
+    data class OpenSettings(val permission: String) : PermissionGrantAction
+    data object None : PermissionGrantAction
+}
+
+internal fun resolvePermissionGrantAction(
+    missing: List<String>,
+    requestedBefore: Set<String>,
+    shouldShowRationale: (String) -> Boolean,
+): PermissionGrantAction {
+    val permanentlyDenied = missing.filter { it in requestedBefore && !shouldShowRationale(it) }
+    val requestable = missing - permanentlyDenied.toSet()
+    return when {
+        requestable.isNotEmpty() -> PermissionGrantAction.Request(requestable)
+        permanentlyDenied.isNotEmpty() -> PermissionGrantAction.OpenSettings(permanentlyDenied.first())
+        else -> PermissionGrantAction.None
+    }
+}
