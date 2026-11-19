@@ -37,6 +37,10 @@
             android:name=".presentation.ForwardingLogActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".presentation.AppUpdateInstallActivity"
+            android:exported="false" />
+
         <receiver
             android:name=".SmsReceiver"
             android:exported="true"

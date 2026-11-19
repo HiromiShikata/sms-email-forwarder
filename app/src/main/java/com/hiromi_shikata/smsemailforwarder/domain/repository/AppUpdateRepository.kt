@@ -1,7 +1,7 @@
 package com.hiromi_shikata.smsemailforwarder.domain.repository
 
-import com.hiromi_shikata.smsemailforwarder.domain.entity.AppUpdate
+import com.hiromi_shikata.smsemailforwarder.domain.entity.AppRelease
 
 interface AppUpdateRepository {
-    fun fetchLatest(currentVersion: String): AppUpdate
+    fun fetchReleasesNewerThan(installedVersion: String): List<AppRelease>
 }

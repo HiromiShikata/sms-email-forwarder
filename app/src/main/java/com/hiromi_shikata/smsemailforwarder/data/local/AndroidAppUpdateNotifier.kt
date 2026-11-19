@@ -8,26 +8,29 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
 import com.hiromi_shikata.smsemailforwarder.R
-import com.hiromi_shikata.smsemailforwarder.domain.entity.AppUpdate
+import com.hiromi_shikata.smsemailforwarder.domain.buildUpdateNotificationText
+import com.hiromi_shikata.smsemailforwarder.domain.entity.AppRelease
 import com.hiromi_shikata.smsemailforwarder.domain.repository.AppUpdateNotifier
+import com.hiromi_shikata.smsemailforwarder.presentation.AppUpdateInstallActivity
 
 class AndroidAppUpdateNotifier(private val context: Context) : AppUpdateNotifier {
 
-    override fun notify(update: AppUpdate) {
+    override fun notifyReadyToInstall(releases: List<AppRelease>) {
         val nm = context.getSystemService<NotificationManager>() ?: return
-        val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-            ?.apply { addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP) }
-            ?: return
+        val newest = releases.firstOrNull() ?: return
+        val installIntent = Intent(context, AppUpdateInstallActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             context,
             0,
-            launchIntent,
+            installIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        val notes = buildUpdateNotificationText(releases)
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
             .setContentTitle(context.getString(R.string.app_update_notification_title))
-            .setContentText(context.getString(R.string.app_update_notification_body, update.latestVersion))
+            .setContentText(context.getString(R.string.app_update_notification_body, newest.version))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(notes))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setOngoing(true)
             .setAutoCancel(false)

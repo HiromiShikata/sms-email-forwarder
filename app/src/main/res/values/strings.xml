@@ -18,7 +18,6 @@
     <string name="setup_required">Setup required — tap Settings to configure email</string>
     <string name="permissions_granted">SMS permissions granted ✓</string>
     <string name="permissions_required">SMS permissions required — tap to grant</string>
-    <string name="update_available">Update available: v%s — tap to install</string>
     <string name="auth_mode_label">Authentication Mode</string>
     <string name="auth_mode_smtp">Custom SMTP</string>
     <string name="auth_mode_google_account">Gmail Account (App Password)</string>
@@ -42,8 +41,6 @@
     <string name="test_connection_failure_title">Connection Failed</string>
     <string name="test_connection_unknown_error">An unknown error occurred.</string>
     <string name="forwarding_active_google">Forwarding SMS via Gmail: %s → %s</string>
-    <string name="downloading">Downloading update…</string>
-    <string name="download_failed">Download failed. Please check your connection and try again.</string>
     <string name="smtp_password_unavailable">The saved SMTP password could not be read. Please enter it again in Settings.</string>
     <string name="forwarding_error_title">SMS Forwarding Failed</string>
     <string name="forwarding_error_body">Could not forward SMS from %1$s: %2$s</string>
@@ -60,11 +57,7 @@
     <string name="app_update_channel_name">App Updates</string>
     <string name="app_update_channel_description">Alerts when a new version of the app is available</string>
     <string name="app_update_notification_title">Update Available</string>
-    <string name="app_update_notification_body">Version %s is available. Tap to open the app and update.</string>
-    <string name="app_update_dialog_title">Update Available</string>
-    <string name="app_update_dialog_message">Version %s is available. Would you like to download and install it now?</string>
-    <string name="app_update_dialog_positive">Update Now</string>
-    <string name="app_update_dialog_negative">Later</string>
+    <string name="app_update_notification_body">Version %s is downloaded and ready to install. Tap to review the install prompt.</string>
     <string name="grant_sms_permission">Grant SMS Permission</string>
     <string name="view_log">View Forwarding Log</string>
     <string name="forwarding_history">Forwarding History</string>
@@ -74,4 +67,22 @@
     <string name="status_failed">Failed</string>
     <string name="status_setup_incomplete">Setup Incomplete</string>
     <string name="status_retrying">Retrying</string>
+    <string name="app_update_install_button">Install update v%s</string>
+    <string name="app_update_nothing_to_install">No downloaded update is ready to install.</string>
+    <string name="app_update_apk_missing">The downloaded update file is missing. The next check will download it again.</string>
+    <string name="app_update_allow_install_then_retry">Allow installs from this app, then tap the update notification again.</string>
+    <string name="app_update_status_not_checked">Installed version: %s
+Update check has not finished yet.</string>
+    <string name="app_update_status_up_to_date">Installed version: %s
+Up to date. Last checked: %s</string>
+    <string name="app_update_status_available">Installed version: %s
+Update v%s is available. Download starts in the background.</string>
+    <string name="app_update_status_downloading">Installed version: %s
+Downloading update v%s…</string>
+    <string name="app_update_status_ready">Installed version: %s
+Update v%s is downloaded. Tap Install to approve it.</string>
+    <string name="app_update_status_check_failed">Installed version: %s
+Last update check failed at %s: %s</string>
+    <string name="app_update_status_read_failed">Installed version: %s
+Could not read the update status: %s</string>
 </resources>
