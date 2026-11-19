@@ -8,36 +8,46 @@ class GithubAppUpdateRepositoryTest {
     private fun entry(version: String) =
         "<entry><title>$version</title><content type=\"html\">&lt;p&gt;n$version&lt;/p&gt;</content></entry>"
 
-    private fun page(vararg versions: String) =
+    private fun feed(vararg versions: String) =
         "<feed xmlns=\"http://www.w3.org/2005/Atom\">${versions.joinToString("") { entry(it) }}</feed>"
 
+    private val tenNewest = (345 downTo 336).map { "0.1.$it" }.toTypedArray()
+
     @Test
-    fun `fetch reads the releases atom feed and never the rest api`() {
+    fun `fetch reads only the releases atom feed and never the rest api`() {
         val requested = mutableListOf<String>()
         val repository = GithubAppUpdateRepository("owner/app", fetchText = { url ->
             requested += url
-            if (url.endsWith("page=1")) page("0.1.346", "0.1.345") else "<feed xmlns=\"http://www.w3.org/2005/Atom\"/>"
+            feed("0.1.345", "0.1.344")
         })
-        repository.fetchReleasesNewerThan("0.1.344")
-        assertTrue(requested.all { it.startsWith("https://github.com/owner/app/releases.atom") })
-        assertTrue(requested.none { it.contains("api.github.com") })
+        repository.fetchReleasesNewerThan("0.1.343")
+        assertEquals(listOf("https://github.com/owner/app/releases.atom"), requested)
     }
 
     @Test
-    fun `fetch pages until a release at or below the installed version`() {
-        val pages = mapOf(
-            "page=1" to page("0.1.349", "0.1.348"),
-            "page=2" to page("0.1.347", "0.1.346"),
-            "page=3" to page("0.1.345", "0.1.344"),
+    fun `fetch returns every feed entry when the feed reaches the installed version`() {
+        val repository = GithubAppUpdateRepository("owner/app", fetchText = { feed("0.1.346", "0.1.345", "0.1.344") })
+        assertEquals(
+            listOf("0.1.346", "0.1.345", "0.1.344"),
+            repository.fetchReleasesNewerThan("0.1.344").map { it.version },
         )
-        val requested = mutableListOf<String>()
-        val repository = GithubAppUpdateRepository("owner/app", fetchText = { url ->
-            requested += url
-            pages.entries.first { url.endsWith(it.key) }.value
-        })
-        val releases = repository.fetchReleasesNewerThan("0.1.344")
-        assertEquals(listOf("0.1.349", "0.1.348", "0.1.347", "0.1.346", "0.1.345", "0.1.344"), releases.map { it.version })
-        assertEquals(3, requested.size)
+    }
+
+    @Test
+    fun `fetch fails visibly when the feed is truncated before the installed version`() {
+        val repository = GithubAppUpdateRepository("owner/app", fetchText = { feed(*tenNewest) })
+        val error = runCatching { repository.fetchReleasesNewerThan("0.1.300") }.exceptionOrNull()
+        assertTrue(error is IllegalStateException)
+        assertEquals(
+            "The release feed lists only the newest 10 releases, and v0.1.336 is still newer than v0.1.300",
+            error?.message,
+        )
+    }
+
+    @Test
+    fun `a full feed that already reaches the installed version is accepted`() {
+        val repository = GithubAppUpdateRepository("owner/app", fetchText = { feed(*tenNewest) })
+        assertEquals(10, repository.fetchReleasesNewerThan("0.1.336").size)
     }
 
     @Test(expected = IllegalStateException::class)

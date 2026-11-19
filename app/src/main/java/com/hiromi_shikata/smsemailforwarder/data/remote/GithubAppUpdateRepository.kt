@@ -6,28 +6,27 @@ import com.hiromi_shikata.smsemailforwarder.domain.repository.AppUpdateRepositor
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+
 class GithubAppUpdateRepository(
     private val githubRepo: String,
     private val fetchText: (String) -> String = ::httpGetText,
     private val versionCompare: AppVersionCompare = AppVersionCompare(),
-    private val maxPages: Int = MAX_PAGES,
 ) : AppUpdateRepository {
     private val parser = GithubReleasesAtomParser(githubRepo)
 
     override fun fetchReleasesNewerThan(installedVersion: String): List<AppRelease> {
-        val collected = mutableListOf<AppRelease>()
-        for (page in 1..maxPages) {
-            val url = "https://github.com/$githubRepo/releases.atom?page=$page"
-            val releases = parser.parse(fetchText(url))
-            if (releases.isEmpty()) break
-            collected += releases
-            if (releases.any { !versionCompare.isNewer(it.version, installedVersion) }) break
+        val releases = parser.parse(fetchText("https://github.com/$githubRepo/releases.atom"))
+        val oldest = releases.lastOrNull()
+        if (releases.size >= FEED_ENTRY_LIMIT && oldest != null && versionCompare.isNewer(oldest.version, installedVersion)) {
+            throw IllegalStateException(
+                "The release feed lists only the newest $FEED_ENTRY_LIMIT releases, and v${oldest.version} is still newer than v$installedVersion",
+            )
         }
-        return collected
+        return releases
     }
 
     companion object {
-        const val MAX_PAGES = 10
+        const val FEED_ENTRY_LIMIT = 10
     }
 }
 
