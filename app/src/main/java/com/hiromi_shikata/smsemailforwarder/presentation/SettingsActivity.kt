@@ -39,7 +39,13 @@ class SettingsActivity : AppCompatActivity() {
         )[SettingsViewModel::class.java]
 
         binding.authModeGroup.setOnCheckedChangeListener { _: RadioGroup, checkedId: Int ->
-            updateSectionVisibility(checkedId == R.id.authModeGoogleAccount)
+            showAuthSection(
+                when (checkedId) {
+                    R.id.authModeSmtp -> EmailAuthMode.SMTP
+                    R.id.authModeHttpsApi -> EmailAuthMode.HTTPS_API
+                    else -> EmailAuthMode.GOOGLE_ACCOUNT
+                },
+            )
         }
 
         binding.getAppPasswordButton.setOnClickListener {
@@ -69,7 +75,15 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         binding.saveButton.setOnClickListener {
-            if (binding.authModeGoogleAccount.isChecked) {
+            if (binding.authModeHttpsApi.isChecked) {
+                val saved = viewModel.saveHttpsApiConfig(
+                    apiEndpointUrl = binding.apiEndpointUrlInput.text.toString(),
+                    apiKey = binding.apiKeyInput.text.toString(),
+                )
+                if (!saved) {
+                    Toast.makeText(this, getString(R.string.api_endpoint_must_be_https), Toast.LENGTH_LONG).show()
+                }
+            } else if (binding.authModeGoogleAccount.isChecked) {
                 viewModel.saveGoogleAccountConfig(
                     destinationEmail = binding.destinationEmailInput.text.toString(),
                     gmailAddress = binding.gmailAddressInput.text.toString(),
@@ -92,16 +106,22 @@ class SettingsActivity : AppCompatActivity() {
             binding.smtpPortInput.setText(config.smtpPort.toString())
             binding.smtpUsernameInput.setText(config.smtpUsername)
             binding.smtpPasswordInput.setText(config.smtpPassword)
+            binding.apiEndpointUrlInput.setText(config.apiEndpointUrl)
+            binding.apiKeyInput.setText(config.apiKey)
             when (config.authMode) {
                 EmailAuthMode.SMTP -> {
                     binding.authModeSmtp.isChecked = true
-                    updateSectionVisibility(false)
+                    showAuthSection(EmailAuthMode.SMTP)
                 }
                 EmailAuthMode.GOOGLE_ACCOUNT -> {
                     binding.authModeGoogleAccount.isChecked = true
-                    updateSectionVisibility(true)
+                    showAuthSection(EmailAuthMode.GOOGLE_ACCOUNT)
                     binding.gmailAddressInput.setText(config.smtpUsername)
                     binding.gmailAppPasswordInput.setText(config.smtpPassword)
+                }
+                EmailAuthMode.HTTPS_API -> {
+                    binding.authModeHttpsApi.isChecked = true
+                    showAuthSection(EmailAuthMode.HTTPS_API)
                 }
             }
         }
@@ -146,8 +166,11 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateSectionVisibility(googleAccountMode: Boolean) {
-        binding.smtpSection.visibility = if (googleAccountMode) View.GONE else View.VISIBLE
-        binding.googleAccountSection.visibility = if (googleAccountMode) View.VISIBLE else View.GONE
+    private fun showAuthSection(authMode: EmailAuthMode) {
+        binding.smtpSection.visibility = visibilityOf(authMode == EmailAuthMode.SMTP)
+        binding.googleAccountSection.visibility = visibilityOf(authMode == EmailAuthMode.GOOGLE_ACCOUNT)
+        binding.httpsApiSection.visibility = visibilityOf(authMode == EmailAuthMode.HTTPS_API)
     }
+
+    private fun visibilityOf(shown: Boolean): Int = if (shown) View.VISIBLE else View.GONE
 }

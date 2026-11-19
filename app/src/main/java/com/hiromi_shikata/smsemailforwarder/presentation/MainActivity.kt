@@ -112,6 +112,7 @@ class MainActivity : AppCompatActivity() {
                     config.smtpUsername,
                     config.destinationEmail,
                 )
+                config.authMode == EmailAuthMode.HTTPS_API -> getString(R.string.forwarding_active_https_api)
                 else -> getString(R.string.forwarding_active, config.destinationEmail)
             }
             if (!config.isComplete && !hasAutoOpenedSettings) {

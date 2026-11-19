@@ -28,6 +28,13 @@
     <string name="gmail_app_password_hint">xxxx xxxx xxxx xxxx</string>
     <string name="get_app_password">Get App Password at myaccount.google.com/apppasswords →</string>
     <string name="google_account_section_info">An App Password lets this app send email via your Gmail account without your main password. App Passwords require 2-Step Verification to be enabled on your Google Account (myaccount.google.com/security).</string>
+    <string name="auth_mode_https_api">HTTPS API</string>
+    <string name="api_endpoint_url">API Endpoint URL</string>
+    <string name="api_endpoint_url_hint">https://example.com/endpoint</string>
+    <string name="api_key">API Key</string>
+    <string name="api_key_hint">Key shared with your endpoint</string>
+    <string name="api_endpoint_must_be_https">API Endpoint URL must start with https://</string>
+    <string name="forwarding_active_https_api">Forwarding SMS via HTTPS API</string>
     <string name="test_connection">Test Connection</string>
     <string name="test_connection_testing">Testing…</string>
     <string name="test_connection_success_title">Connection Successful</string>

@@ -50,6 +50,12 @@
                 android:checked="true"
                 android:text="@string/auth_mode_google_account" />
 
+            <RadioButton
+                android:id="@+id/authModeHttpsApi"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/auth_mode_https_api" />
+
         </RadioGroup>
 
         <LinearLayout
@@ -121,6 +127,43 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/test_connection" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/httpsApiSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/api_endpoint_url"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/apiEndpointUrlInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textUri"
+                android:hint="@string/api_endpoint_url_hint" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/api_key"
+                android:textStyle="bold" />
+
+            <EditText
+                android:id="@+id/apiKeyInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:hint="@string/api_key_hint" />
 
         </LinearLayout>
 
