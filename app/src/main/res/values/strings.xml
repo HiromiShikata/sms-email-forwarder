@@ -60,7 +60,7 @@
     <string name="app_update_channel_name">App Updates</string>
     <string name="app_update_channel_description">Alerts when a new version of the app is available</string>
     <string name="app_update_notification_title">Update Available</string>
-    <string name="app_update_notification_body">Version %s is available. Tap to open the app and update.</string>
+    <string name="app_update_notification_body">Version %s is downloaded. Tap to install.</string>
     <string name="app_update_dialog_title">Update Available</string>
     <string name="app_update_dialog_message">Version %s is available. Would you like to download and install it now?</string>
     <string name="app_update_dialog_positive">Update Now</string>

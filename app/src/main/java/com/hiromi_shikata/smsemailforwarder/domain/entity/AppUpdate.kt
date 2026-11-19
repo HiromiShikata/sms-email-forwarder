@@ -4,4 +4,5 @@ data class AppUpdate(
     val latestVersion: String,
     val downloadUrl: String,
     val isUpdateAvailable: Boolean,
+    val releases: List<AppRelease> = emptyList(),
 )
